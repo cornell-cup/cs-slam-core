@@ -9,3 +9,13 @@ compile.sh
 
 # build
 /build
+
+# visual studio 
+.vs 
+/Debug
+/x64
+*.sln 
+*.db 
+*.opendb 
+*.vcxproj
+*.filters
