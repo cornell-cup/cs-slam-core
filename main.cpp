@@ -12,14 +12,16 @@ int main() {
   // displayNames.push_back("Disparity");
   Display displayPipe(displayNames);
 
-  cv::Mat left, right;
-  std::vector<cv::Mat> images;
-  images.push_back(left);
-  images.push_back(right);
+  
 
   int quit = 0;
   while (!quit){
+	
+	cv::Mat left, right;
     camera.getImage(left, right);
+	std::vector<cv::Mat> images;
+	images.push_back(left);
+	images.push_back(right);
     displayPipe.displayImages(images);
 
 

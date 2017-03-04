@@ -8,7 +8,7 @@
 #define HEIGHT 480
 #define FRAME_RATE 30
 #define CAMERA_INDEX_LEFT 1
-#define CAMERA_INDEX_RIGHT 2
+#define CAMERA_INDEX_RIGHT 0
 
 class StereoCamera {
   private:
