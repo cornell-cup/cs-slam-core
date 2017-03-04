@@ -1,0 +1,11 @@
+# compiled files
+slam.dSYM
+
+# visual studio code
+.vscode
+
+# local compile scripts
+compile.sh
+
+# build
+/build
