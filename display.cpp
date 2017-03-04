@@ -11,7 +11,7 @@ Display::Display(std::vector<std::string> displayNames) {
 
 Display::~Display() {}
 
-void Display::DisplayImages(std::vector<cv::Mat>& displayImages){
+void Display::displayImages(std::vector<cv::Mat>& displayImages){
   if(displayImages.size() == _displayNames.size()) {
     for(int i = 0; i <  displayImages.size(); i++) {
       cv::imshow(_displayNames.at(i), displayImages.at(i));

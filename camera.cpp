@@ -14,7 +14,7 @@ StereoCamera::StereoCamera(){
 
 StereoCamera::~StereoCamera() {}
 
-void StereoCamera::getImages(cv::Mat& left_img, cv::Mat& right_img){
+void StereoCamera::getImage(cv::Mat& left_img, cv::Mat& right_img){
   _cameraLeft >> left_img;
   _cameraRight >> right_img;
 

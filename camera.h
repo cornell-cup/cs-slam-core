@@ -2,6 +2,7 @@
 #define _SLAM_CAMERA
 
 #include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #define WIDTH 640
 #define HEIGHT 480
@@ -9,7 +10,7 @@
 #define CAMERA_INDEX_LEFT 1
 #define CAMERA_INDEX_RIGHT 2
 
-class SteroCamera {
+class StereoCamera {
   private:
     cv::VideoCapture _cameraLeft;
     cv::VideoCapture _cameraRight;

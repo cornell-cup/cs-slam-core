@@ -17,7 +17,7 @@ class Display {
     Display(std::vector<std::string> displayNames);
     virtual ~Display();
 
-    void DisplayImages(std::vector<cv::Mat>& displayImages);
+    void displayImages(std::vector<cv::Mat>& displayImages);
 };
 
 #endif
