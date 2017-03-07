@@ -19,3 +19,4 @@ compile.sh
 *.opendb 
 *.vcxproj
 *.filters
+*.user
