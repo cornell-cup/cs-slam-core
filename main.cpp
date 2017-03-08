@@ -18,17 +18,21 @@ int main() {
   Calibration calib = Calibration();
   DepthMap dpMap = DepthMap();
 
-  cv::Mat disparity = cv::Mat::zeros();
+  cv::Mat disparity = cv::Mat::zeros(0,0,CV_8U);
 
   int quit = 0;
   while (!quit){
-	
+
 	cv::Mat left, right;
     camera.getImage(left, right);
 	std::vector<cv::Mat> images;
 	Util::toGrayscale(left, left);
 	Util::toGrayscale(left, left);
 	calib.undistortImages(left, right, left, right);
+
+  if(disparity.rows == 0) {
+    disparity = cv::Mat.zeros(left.shape, CV_8U);
+  }
 
 
 
