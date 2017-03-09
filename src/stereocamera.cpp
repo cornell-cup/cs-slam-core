@@ -1,4 +1,4 @@
-#include "camera.h"
+#include "stereocamera.h"
 
 StereoCamera::StereoCamera(){
   _cameraLeft = cv::VideoCapture(CAMERA_INDEX_LEFT);

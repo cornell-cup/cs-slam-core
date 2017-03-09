@@ -16,7 +16,8 @@ class StereoCamera {
     cv::VideoCapture _cameraRight;
   public:
     StereoCamera();
-    virtual ~StereoCamera();
+
+	virtual ~StereoCamera();
 
     void getImage(cv::Mat& left_img, cv::Mat& right_img);
 };

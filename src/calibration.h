@@ -5,6 +5,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <string>
 #include <fstream>
+#include <iostream>
 
 #define CAMERA_MATRIX_LEFT_PATH "cam_mats_left"
 #define CAMERA_MATRIX_RIGHT_PATH "cam_mats_right"
