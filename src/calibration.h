@@ -12,7 +12,7 @@
 #define DISTANCE_COEFF_LEFT_PATH "dist_coefs_left"
 #define DISTANCE_COEFF_RIGHT_PATH "dist_coefs_right" // TODO fill in exact values
 
-#define MAT_ROOT_PATH "calubration_mats"
+#define MAT_ROOT_PATH "calibration_mats"
 
 class Calibration {
 private:

@@ -26,6 +26,7 @@ DepthMap::DepthMap() {
 		speckleWindowSize,
 		speckleRange
 	);
+
 }
 
 DepthMap::~DepthMap() {}
