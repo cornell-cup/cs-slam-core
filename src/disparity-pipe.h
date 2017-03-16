@@ -10,6 +10,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 #define CAMERA_MATRIX_LEFT_PATH "cam_mats_left"
 #define CAMERA_MATRIX_RIGHT_PATH "cam_mats_right"
@@ -18,28 +19,26 @@
 
 class DisparityPipeline {
 private:
-  cv::Mat _cameraMatrixLeft;
+	cv::Mat _cameraMatrixLeft;
 	cv::Mat _cameraMatrixRight;
 	cv::Mat _distanceCoeffLeft;
 	cv::Mat _distanceCoeffRight;
 
-  cv::VideoCapture _cameraLeft;
-  cv::VideoCapture _cameraRight;
+	cv::VideoCapture _cameraLeft;
+	cv::VideoCapture _cameraRight;
 
-  cv::Ptr<cv::StereoSGBM> _stereoSGBM;
+	cv::Ptr<cv::StereoSGBM> _stereoSGBM;
 
-  cv::Mat readMatFromTxt(std::string filename, int rows, int cols);
+	std::shared_ptr<cv::Mat> _disparity;
+
+	cv::Mat readMatFromTxt(std::string filename, int rows, int cols);
 
 public:
-  DisparityPipeline(CameraConfig& cam_config, int cam_idx_left, int cam_idx_right, std::string calib_directory);
+	DisparityPipeline(int width, int height, int rate, int cam_idx_left, int cam_idx_right, std::string calib_directory);
 
-  void executePipeline();
+	void executePipeline();
 
-  struct CameraConfig {
-    int width;
-    int height;
-    int rate;
-  };
+	const std::shared_ptr<cv::Mat> getDisparity();
 };
 
 #endif

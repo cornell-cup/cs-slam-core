@@ -3,12 +3,14 @@
 #include "disparity-pipe.h"
 
 int main() {
-  DisparityPipeline::CameraConfig camConfig;
-  camConfig.width = 640;
-  camConfig.height = 480;
-  camConfig.rate = 30;
-
-  DisparityPipeline pipeline = DisparityPipeline(camConfig, 1, 0, "calibration_mats");
+	DisparityPipeline pipeline = DisparityPipeline(
+		640,						// width
+		480,						// height
+		30,							// frame rate
+		1,							// left camera index
+		0,							// right camera index		
+		"calibration_mats"			// camera matricies root directory
+	);
 
   // set to true to quit the loop
   int quit = 0;
