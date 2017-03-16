@@ -1,15 +1,15 @@
 #include "stereocamera.h"
 
-StereoCamera::StereoCamera(){
-  _cameraLeft = cv::VideoCapture(CAMERA_INDEX_LEFT);
-  _cameraLeft.set(CV_CAP_PROP_FRAME_WIDTH, WIDTH);
-  _cameraLeft.set(CV_CAP_PROP_FRAME_HEIGHT, HEIGHT);
-  _cameraLeft.set(CV_CAP_PROP_FPS, FRAME_RATE);
+StereoCamera::StereoCamera(int width, int height, int rate, int cam_idx_left, int cam_idx_right){
+  _cameraLeft = cv::VideoCapture(cam_idx_left);
+  _cameraLeft.set(CV_CAP_PROP_FRAME_WIDTH, widen);
+  _cameraLeft.set(CV_CAP_PROP_FRAME_HEIGHT, height);
+  _cameraLeft.set(CV_CAP_PROP_FPS, rate);
 
-  _cameraRight = cv::VideoCapture(CAMERA_INDEX_RIGHT);
-  _cameraRight.set(CV_CAP_PROP_FRAME_WIDTH, WIDTH);
-  _cameraRight.set(CV_CAP_PROP_FRAME_HEIGHT, HEIGHT);
-  _cameraRight.set(CV_CAP_PROP_FPS, FRAME_RATE);
+  _cameraRight = cv::VideoCapture(cam_idx_right);
+  _cameraRight.set(CV_CAP_PROP_FRAME_WIDTH, width);
+  _cameraRight.set(CV_CAP_PROP_FRAME_HEIGHT, height);
+  _cameraRight.set(CV_CAP_PROP_FPS, rate);
 }
 
 StereoCamera::~StereoCamera() {}
