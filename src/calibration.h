@@ -10,12 +10,13 @@
 #define CAMERA_MATRIX_LEFT_PATH "cam_mats_left"
 #define CAMERA_MATRIX_RIGHT_PATH "cam_mats_right"
 #define DISTANCE_COEFF_LEFT_PATH "dist_coefs_left"
-#define DISTANCE_COEFF_RIGHT_PATH "dist_coefs_right" // TODO fill in exact values
+#define DISTANCE_COEFF_RIGHT_PATH "dist_coefs_right"
 
-#define MAT_ROOT_PATH "calubration_mats"
+#define MAT_ROOT_PATH "calibration_mats"
 
 class Calibration {
 private:
+	// define the calibration matricies
 	cv::Mat _cameraMatrixLeft;
 	cv::Mat _cameraMatrixRight;
 	cv::Mat _distanceCoeffLeft;
@@ -27,6 +28,7 @@ public:
 	Calibration(); //load in the matrices
 	virtual ~Calibration();
 
+	// undistort the left and right images using the calibration matricies
 	void undistortImages(cv::Mat& leftImg, cv::Mat& rightImg, cv::Mat& leftImageDest, cv::Mat& rightImageDest);
 
 };

@@ -1,4 +1,4 @@
-#include "stereorig.h"
+	#include "stereorig.h"
 
 StereoRig::StereoRig(unsigned int id_left, unsigned int id_right)
 {

@@ -1,16 +1,19 @@
-#pragma once
+#ifndef _SLAM_CONSTANTS
+#define _SLAM_CONSTANTS
 
 #include <vector>
+
+#include <memory>
 
 #define Consts Constants::Instance()
 class Constants
 {
 public:
-	std::vector<std::string> displays = { "Left", "Right", "Dispartiy" };
+	std::vector<std::string> displays = { "Left", "Right", "Disparity" };
 
-	static Constants* Instance()
+	static std::shared_pointer<Constants> Instance()
 	{
-		Constants* instance = new Constants();
+		std::shared_pointer<Constants> instance = new Constants();
 
 		return instance;
 	}
@@ -18,3 +21,5 @@ public:
 private:
 	Constants() {}
 };
+
+#endif
