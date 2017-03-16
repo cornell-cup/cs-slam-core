@@ -20,3 +20,5 @@ compile.sh
 *.vcxproj
 *.filters
 *.user
+*.psess
+*.vspx
