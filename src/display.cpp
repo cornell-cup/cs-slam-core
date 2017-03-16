@@ -1,22 +1,56 @@
 #include "display.h"
 
-Display::Display(std::vector<std::string> displayNames) {
-  _displayNames = displayNames;
+Display::Display()
+{
 
-  for(int i = 0; i < _displayNames.size(); i++) {
-    cv::namedWindow(_displayNames.at(i));
-  }
-  
 }
 
 Display::~Display() {}
 
-void Display::displayImages(std::vector<cv::Mat*>& displayImages){
-  if(displayImages.size() == _displayNames.size()) {
-    for(int i = 0; i <  displayImages.size(); i++) {
-      cv::imshow(_displayNames.at(i), *displayImages.at(i));
+void Display::draw(std::string windowName, cv::Mat& image)
+{
+	if (!hasWindow(windowName))
+		addWindow(windowName);
+
+	cv::imshow(windowName, image);
+}
+
+void Display::addWindow(std::string windowName)
+{
+	if (!hasWindow(windowName))
+	{
+		_displayNames.insert(windowName);
+		cv::namedWindow(windowName);
+	}
+}
+
+void Display::addWindows(std::set<std::string> windowNames)
+{
+	for(std::string windowName : windowNames)
+	if (!hasWindow(windowName))
+	{
+		_displayNames.insert(windowName);
+		cv::namedWindow(windowName);
+	}
+}
+
+bool Display::hasWindow(std::string windowName)
+{
+	return _displayNames.find(windowName) != _displayNames.end();
+}
+
+void Display::displayImages(std::unordered_map<std::string, cv::Mat>& displayImages){
+
+    for(auto it: displayImages) {
+		if (!hasWindow(it.first))
+			addWindow(it.first);
+		draw(it.first, it.second);
     }
-  } else {
-    std::cout << "Incorrect image matrix dimensions\n";
-  }
+ }
+
+std::shared_ptr<Display> Display::Instance()
+{
+		static std::shared_ptr<Display> instance(new Display());
+
+		return instance;
 }

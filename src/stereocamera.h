@@ -3,23 +3,45 @@
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <chrono>
+#include <memory>
 
-#define WIDTH 640
-#define HEIGHT 480
-#define FRAME_RATE 30
-#define CAMERA_INDEX_LEFT 1
-#define CAMERA_INDEX_RIGHT 0
+#include "opencvcamera.h"
 
 class StereoCamera {
+public:
+	struct StereoCapture
+	{
+		cv::Mat left;
+		cv::Mat right;
+		std::chrono::time_point<std::chrono::system_clock> stamp;
+
+		StereoCapture(cv::Mat& left_image, cv::Mat& right_image, std::chrono::time_point<std::chrono::system_clock> time_stamp) : left(left_image), right(left_image), stamp(time_stamp) {};
+		StereoCapture() {};
+
+		bool isValid()
+		{
+			return !left.empty() && !right.empty();
+		}
+	};
+
   private:
-    cv::VideoCapture _cameraLeft;
-    cv::VideoCapture _cameraRight;
+    OpenCVCamera _cameraLeft;
+    OpenCVCamera _cameraRight;
+
   public:
-    StereoCamera();
+    StereoCamera(unsigned int width, unsigned int height, unsigned int rate, int cam_idx_left, int cam_idx_right);
+	StereoCamera(unsigned int width, unsigned int height, unsigned frame_rate, OpenCVCamera& left, OpenCVCamera& right);
 
 	virtual ~StereoCamera();
 
-    void getImage(cv::Mat& left_img, cv::Mat& right_img);
+	void configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate);
+
+	std::shared_ptr<StereoCamera::StereoCapture> getImage();
+
+	unsigned int getWidth() const;
+	unsigned int getHeight() const;
+
 };
 
 #endif

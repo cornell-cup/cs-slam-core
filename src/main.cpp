@@ -9,41 +9,55 @@
 #include "constants.h"
 
 int main() {
-  StereoCamera camera;
-  Display displayPipe = Display(Consts->displays);
+  // setup the stereo camera
+  StereoCamera camera = StereoCamera(640, 480, 30, 0, 1);
 
+  // intialize the calibration pipeline step
   Calibration calib = Calibration();
+
+  // intialize the depth map pipeline step
   DepthMap dpMap = DepthMap();
 
-  cv::Mat disparity = cv::Mat::zeros(HEIGHT, WIDTH, CV_8U);
-  //cv::Mat disparity = cv::Mat();
+  // set up the disparity map
+  cv::Mat disparity = cv::Mat::zeros(camera.getHeight(), camera.getWidth(), CV_8U);
 
-
+  // set to true to quit the loop
   int quit = 0;
 
-  cv::Mat left, right, leftG, rightG;
+  // initialize the matricies
+  // TODO investigate removal
+  cv::Mat leftG, rightG;
   while (!quit){
 	
-	
-    camera.getImage(left, right);
-	std::vector<cv::Mat*> images;
-	Util::toGrayscale(left, leftG);
-	Util::toGrayscale(right, rightG);
+    // get the images
+   std::shared_ptr<StereoCamera::StereoCapture> cap = camera.getImage();
 
+	//check to see that images were actually captured
+	if (!cap->isValid())
+	{
+		std::cout << "Invalid Capture" << std::endl;
+		continue;
+	}
 
-	calib.undistortImages(leftG, rightG, left, right);
+    // TODO see if this only needs to be done once, not a major issue though
+    Util::toGrayscale(cap->left, leftG);
+    Util::toGrayscale(cap->right, rightG);
 
-	dpMap.getDisparity(leftG, rightG, disparity);
+    // undistort the images
+    calib.undistortImages(leftG, rightG, cap->left, cap->right);
 
-	Util::normalize(disparity, disparity);
+    // calculate the disprity map
+    dpMap.getDisparity(leftG, rightG, disparity);
 
-	images.push_back(&left);
-	images.push_back(&right);
-	images.push_back(&disparity);
+    // normalize the output
+    Util::normalize(disparity, disparity);
 
-    displayPipe.displayImages(images);
+    // display the images
+	Displays->draw("Left", cap->left);
+	Displays->draw("Right", cap->right);
+	Displays->draw("Displarity", disparity);
 
-
+    // check if the esc key has been pressed to exit the loop
     int key = cv::waitKey(1);
     if (key == 27) quit = 1;
   }

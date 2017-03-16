@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _SLAM_OPENCVCAMERA
+#define _SLAM_OPENCVCAMERA
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -7,13 +9,9 @@ class OpenCVCamera
 public:
 	OpenCVCamera(unsigned int id) : _id(id) , _capture(_id){};
 
-	//caller responsible for cleaning up each capture
-	cv::Mat* Capture()
+	void Capture(cv::Mat& dest)
 	{
-		cv::Mat* mat = new cv::Mat();
-		_capture >> *mat;
-
-		return mat;
+		_capture >> dest;
 	};
 
 	void Configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate)
@@ -21,6 +19,26 @@ public:
 		_capture.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
 		_capture.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
 		_capture.set(CV_CAP_PROP_FPS, frame_rate);
+	}
+
+	unsigned int getHeight() const
+	{
+		return _capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+	}
+
+	unsigned int getWidth() const
+	{
+		return _capture.get(CV_CAP_PROP_FRAME_WIDTH);
+	}
+
+	unsigned int getFrameRate() const
+	{
+		return _capture.get(CV_CAP_PROP_FPS);
+	}
+
+	unsigned int getAttribute(unsigned int id) const
+	{
+		return _capture.get(id);
 	}
 	
 protected:
@@ -30,3 +48,5 @@ protected:
 private:
 	cv::VideoCapture _capture;
 };
+
+#endif

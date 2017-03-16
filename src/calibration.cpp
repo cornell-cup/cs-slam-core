@@ -15,17 +15,18 @@ void Calibration::undistortImages(cv::Mat& imgLeft, cv::Mat& imgRight, cv::Mat& 
 	cv::undistort(imgRight, imgRightDest, _cameraMatrixRight, _distanceCoeffRight);
 }
 
-cv::Mat Calibration::readMatFromTxt(std::string filename, int rows, int cols){
-	int m;
-	cv::Mat out = cv::Mat::zeros(rows, cols, CV_32S); //Matrix to store values
+cv::Mat Calibration::readMatFromTxt(std::string filename, int rows, int cols) {
+	float m;
+	cv::Mat out = cv::Mat::zeros(rows, cols, CV_32F); //Matrix to store values
 
 	std::ifstream fileStream(filename);
-	int cnt = 0;//index starts from 0
+	int cnt = 0;	//index starts from 0
+	// loop over through the file stream and read the requested number of numbers
 	while (fileStream >> m)
 	{
 		int temprow = cnt / cols;
 		int tempcol = cnt % cols;
-		out.at<int>(temprow, tempcol) = m;
+		out.at<float>(temprow, tempcol) = m;
 		cnt++;
 	}
 	return out;
