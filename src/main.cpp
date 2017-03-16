@@ -2,7 +2,6 @@
 
 #include "disparity-pipe.h"
 
-
 int main() {
   DisparityPipeline::CameraConfig camConfig;
   camConfig.width = 640;
