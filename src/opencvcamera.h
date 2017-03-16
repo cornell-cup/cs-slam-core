@@ -9,7 +9,6 @@ class OpenCVCamera
 public:
 	OpenCVCamera(unsigned int id) : _id(id) , _capture(_id){};
 
-	//caller responsible for cleaning up each capture
 	void Capture(cv::Mat& dest)
 	{
 		_capture >> dest;
@@ -20,6 +19,26 @@ public:
 		_capture.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
 		_capture.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
 		_capture.set(CV_CAP_PROP_FPS, frame_rate);
+	}
+
+	unsigned int getHeight() const
+	{
+		return _capture.get(CV_CAP_PROP_FRAME_HEIGHT);
+	}
+
+	unsigned int getWidth() const
+	{
+		return _capture.get(CV_CAP_PROP_FRAME_WIDTH);
+	}
+
+	unsigned int getFrameRate() const
+	{
+		return _capture.get(CV_CAP_PROP_FPS);
+	}
+
+	unsigned int getAttribute(unsigned int id) const
+	{
+		return _capture.get(id);
 	}
 	
 protected:

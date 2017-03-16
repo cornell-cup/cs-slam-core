@@ -10,10 +10,7 @@
 
 int main() {
   // setup the stereo camera
-  StereoCamera camera = StereoCamera(640, 480, 30, 1, 0);
-
-  // initialize the display pipe to display the images
-  Display displayPipe = Display(Consts->displays);
+  StereoCamera camera = StereoCamera(640, 480, 30, 0, 1);
 
   // intialize the calibration pipeline step
   Calibration calib = Calibration();
@@ -22,24 +19,32 @@ int main() {
   DepthMap dpMap = DepthMap();
 
   // set up the disparity map
-  cv::Mat disparity = cv::Mat::zeros(HEIGHT, WIDTH, CV_8U);
+  cv::Mat disparity = cv::Mat::zeros(camera.getHeight(), camera.getWidth(), CV_8U);
 
   // set to true to quit the loop
   int quit = 0;
 
   // initialize the matricies
   // TODO investigate removal
-  cv::Mat left, right, leftG, rightG;
+  cv::Mat leftG, rightG;
   while (!quit){
 	
-    // get the images and set them to grayscale
-    camera.getImage(left, right);
+    // get the images
+   std::shared_ptr<StereoCamera::StereoCapture> cap = camera.getImage();
+
+	//check to see that images were actually captured
+	if (!cap->isValid())
+	{
+		std::cout << "Invalid Capture" << std::endl;
+		continue;
+	}
+
     // TODO see if this only needs to be done once, not a major issue though
-    Util::toGrayscale(left, leftG);
-    Util::toGrayscale(right, rightG);
+    Util::toGrayscale(cap->left, leftG);
+    Util::toGrayscale(cap->right, rightG);
 
     // undistort the images
-    calib.undistortImages(leftG, rightG, left, right);
+    calib.undistortImages(leftG, rightG, cap->left, cap->right);
 
     // calculate the disprity map
     dpMap.getDisparity(leftG, rightG, disparity);
@@ -47,14 +52,10 @@ int main() {
     // normalize the output
     Util::normalize(disparity, disparity);
 
-    // add the left, right, and disparity images to the display vector
-    std::vector<cv::Mat> images;
-    images.push_back(left);
-    images.push_back(right);
-    images.push_back(disparity);
-
     // display the images
-    displayPipe.displayImages(images);
+	Displays->draw("Left", cap->left);
+	Displays->draw("Right", cap->right);
+	Displays->draw("Displarity", disparity);
 
     // check if the esc key has been pressed to exit the loop
     int key = cv::waitKey(1);
