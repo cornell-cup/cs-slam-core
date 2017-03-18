@@ -8,7 +8,7 @@ StereoCamera::StereoCamera(unsigned int width, unsigned int height, unsigned int
 StereoCamera::StereoCamera(unsigned int width, unsigned int height, unsigned frame_rate, OpenCVCamera & left, OpenCVCamera & right) :
 							_cameraLeft(left), _cameraRight(right)
 {
-
+	configure(width, height, frame_rate);
 }
 
 StereoCamera::~StereoCamera() {}
