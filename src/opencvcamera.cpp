@@ -17,9 +17,13 @@ void OpenCVCamera::configure(unsigned int frame_width, unsigned int frame_height
 }
 
 void OpenCVCamera::capture(cv::Mat& dest){
-	_capture >> dest;
 	if(!(_cameraMatrix.empty() || _distanceCoeff.empty())) {
-		cv::undistort(dest, dest, _cameraMatrix, _distanceCoeff);
+		cv::Mat tempdest;
+		_capture >> tempdest;
+		cv::undistort(tempdest, dest, _cameraMatrix, _distanceCoeff);
+	}
+	else {
+		_capture >> dest;
 	}
 }
 
@@ -44,7 +48,7 @@ unsigned int OpenCVCamera::getAttribute(unsigned int id) const
 }
 
 
-cv::Mat OpenCVCamera::readMatFromTxt(std::string filename, int rows, int cols) {
+cv::Mat OpenCVCamera::_readMatFromTxt(std::string filename, int rows, int cols) {
 	float m;
 	cv::Mat out = cv::Mat::zeros(rows, cols, CV_32F); //Matrix to store values
 
