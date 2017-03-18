@@ -1,4 +1,4 @@
-#include "src\opencvcamera.h"
+#include "opencvcamera.h"
 
 void OpenCVCamera::Configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate)
 {
