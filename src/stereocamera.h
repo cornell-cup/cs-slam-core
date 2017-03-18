@@ -26,22 +26,18 @@ public:
 		}
 	};
 
-  private:
-    OpenCVCamera _cameraLeft;
-    OpenCVCamera _cameraRight;
-
-  public:
-    StereoCamera(unsigned int width, unsigned int height, unsigned int rate, int cam_idx_left, int cam_idx_right);
-	StereoCamera(unsigned int width, unsigned int height, unsigned frame_rate, OpenCVCamera& left, OpenCVCamera& right);
+	StereoCamera(OpenCVCamera& left, OpenCVCamera& right);
 
 	virtual ~StereoCamera();
-
-	void configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate);
 
 	std::shared_ptr<StereoCamera::StereoCapture> getImage();
 
 	unsigned int getWidth() const;
 	unsigned int getHeight() const;
+
+private:
+	OpenCVCamera _cameraLeft;
+	OpenCVCamera _cameraRight;
 
 };
 

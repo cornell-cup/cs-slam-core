@@ -33,4 +33,5 @@ DepthMap::~DepthMap() {}
 
 void DepthMap::getDisparity(cv::Mat& left_img, cv::Mat& right_img, cv::Mat& disp_dest) {
 	_stereoSGBM->compute(left_img, right_img, disp_dest);
+	cv::normalize(disp_dest, disp_dest, 0, 255, cv::NORM_MINMAX, CV_8U);
 }

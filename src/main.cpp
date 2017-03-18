@@ -9,17 +9,23 @@
 #include "constants.h"
 
 int main() {
-  // setup the stereo camera
-  StereoCamera camera = StereoCamera(640, 480, 30, 0, 1);
+  OpenCVCamera leftCamera = OpenCVCamera(0)
+  leftCamera.configure(640, 480, 30)
+  leftCamera.loadCalibration("calibration_mats/cam_mats_left", "calibration_mats/dist_coefs_left");
+  OpenCVCamera rightCamera = OpenCVCamera(1)
+  rightCamera.configure(640, 480, 30)
+  rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
-  // intialize the calibration pipeline step
-  Calibration calib = Calibration();
+  // setup the stereo camera
+  StereoCamera camera = StereoCamera(leftCamera, rightCamera);
 
   // intialize the depth map pipeline step
   DepthMap dpMap = DepthMap();
 
-  // set up the disparity map
-  cv::Mat disparity = cv::Mat::zeros(camera.getHeight(), camera.getWidth(), CV_8U);
+  // setup windows
+  cv::namedWindow("left");
+  cv::namedWindow("right");
+  cv::namedWindow("disparity");
 
   // set to true to quit the loop
   int quit = 0;
@@ -32,30 +38,24 @@ int main() {
     // get the images
    std::shared_ptr<StereoCamera::StereoCapture> cap = camera.getImage();
 
-	//check to see that images were actually captured
-	if (!cap->isValid())
-	{
-		std::cout << "Invalid Capture" << std::endl;
-		continue;
-	}
+    //check to see that images were actually captured
+    if (!cap->isValid())
+    {
+      std::cout << "Invalid Capture" << std::endl;
+      continue;
+    }
 
     // TODO see if this only needs to be done once, not a major issue though
-    Util::toGrayscale(cap->left, leftG);
-    Util::toGrayscale(cap->right, rightG);
-
-    // undistort the images
-    calib.undistortImages(leftG, rightG, cap->left, cap->right);
+    cv::cvtColor(cap->left, leftG, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(cap->right, rightG, cv::COLOR_BGR2GRAY);
 
     // calculate the disprity map
     dpMap.getDisparity(leftG, rightG, disparity);
 
-    // normalize the output
-    Util::normalize(disparity, disparity);
-
     // display the images
-	Displays->draw("Left", cap->left);
-	Displays->draw("Right", cap->right);
-	Displays->draw("Displarity", disparity);
+    cv::imshow("left", cap->left);
+    cv::imshow("right", cap->right);
+    cv::imshow("disparity", disparity);
 
     // check if the esc key has been pressed to exit the loop
     int key = cv::waitKey(1);
