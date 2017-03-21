@@ -4,15 +4,12 @@ StereoCamera::StereoCamera(OpenCVCamera& left, OpenCVCamera& right): _cameraLeft
 
 StereoCamera::~StereoCamera() {}
 
-std::shared_ptr<StereoCamera::StereoCapture> StereoCamera::getImage(){
+std::chrono::time_point<std::chrono::system_clock> StereoCamera::getImage(cv::Mat& left, cv::Mat& right){
 
-	StereoCapture* cap = new StereoCapture();
+	_cameraLeft.capture(left);
+	_cameraRight.capture(right);
 
-	_cameraLeft.capture(cap->left);
-	_cameraRight.capture(cap->right);
-	cap->stamp = std::chrono::system_clock::now();
-
-	return std::shared_ptr<StereoCapture>(cap);
+	return std::chrono::system_clock::now();
 }
 
 unsigned int StereoCamera::getWidth() const
