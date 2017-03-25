@@ -9,3 +9,19 @@ compile.sh
 
 # build
 /build
+
+# pointclouds
+*.ply
+
+# visual studio 
+.vs 
+/Debug
+/x64
+*.sln 
+*.db 
+*.opendb 
+*.vcxproj
+*.filters
+*.user
+*.psess
+*.vspx
