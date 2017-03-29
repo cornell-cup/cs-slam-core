@@ -57,6 +57,15 @@ cv::Mat* DisparityPipeline::getDisparity() {
 	return &_disparity;
 }
 
+int DisparityPipeline::getDepthAt(int r, int c) {
+	return _disparity.at<int>(r,c);
+}
+
+void DisparityPipeline::setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata)) {
+	//set the callback function for any mouse event
+ 	cv::setMouseCallback("disparity", cbFunc, NULL);
+}
+
 void DisparityPipeline::writePointCloud(std::string fname) {
 	int w = _disparity.size().width;
 	int h = _disparity.size().height;
