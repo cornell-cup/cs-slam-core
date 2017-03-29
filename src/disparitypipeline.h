@@ -26,6 +26,10 @@ public:
 
 	void updateDisplay();
 
+	int getDepthAt(int r, int c);
+
+	void setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata));
+
 	void nudge(int amount);
 private:
 	StereoCamera _camera;
