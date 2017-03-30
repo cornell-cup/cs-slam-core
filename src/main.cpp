@@ -14,7 +14,6 @@ void mouseCallBackFunc(int event, int x, int y, int flags, void* userdata) {
      }
      else if (event == cv::EVENT_MOUSEMOVE){
           std::cout << "Mouse move over the window - position (" << x << ", " << y << ")" << std::endl;
-
      }
 }
 
