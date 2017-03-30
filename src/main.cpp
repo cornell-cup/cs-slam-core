@@ -1,6 +1,7 @@
 #include <string>
 
 #include "disparitypipeline.h"
+#include "meshgenerator.h"
 
 std::function<int(int, int)> getDispValue;
 
@@ -41,6 +42,10 @@ int main() {
   // set the mouse callback
   pipeline.setDisparityMouseCallback(mouseCallBackFunc);
 
+	MeshGenerator meshGenerator = MeshGenerator();
+
+	std::vector<Mesh> meshes;
+
 	// set to true to quit the loop
 	int quit = 0;
 	while (!quit){
@@ -48,7 +53,8 @@ int main() {
 
 		pipeline.updateDisplay();
 
-		// std::cout << ((frameEndTime - frameStartTime)/ 1000000.0) << std::endl;
+		meshes.clear();
+		meshGenerator.generateMesh(*pipeline.getDisparity(), &meshes);
 
 		// check if the esc key has been pressed to exit the loop
 		int key = cv::waitKey(1);

@@ -9,7 +9,7 @@ MeshGenerator::MeshGenerator() {
 
 MeshGenerator::~MeshGenerator() {}
 
-void MeshGenerator::generateMesh(cv::Mat input, std::vector<Mesh>* meshes) {
+void MeshGenerator::generateMesh(cv::Mat& input, std::vector<Mesh>* meshes) {
   int w = input.size().width;
 	int h = input.size().height;
 

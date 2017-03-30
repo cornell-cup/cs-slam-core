@@ -5,29 +5,29 @@
 
 #include <vector>
 
+struct Point3D {
+  int x;
+  int y;
+  int z;
+};
+
+struct TriangleMesh {
+  int p1;
+  int p2;
+  int p3;
+};
+
+struct Mesh {
+  std::vector<Point3D> points;
+  std::vector<TriangleMesh> faces;
+};
+
 class MeshGenerator {
 public:
   MeshGenerator();
   virtual ~MeshGenerator();
 
-  struct Point3D {
-    int x;
-    int y;
-    int z;
-  };
-
-  struct TriangleMesh {
-    int p1;
-    int p2;
-    int p3;
-  };
-
-  struct Mesh {
-    std::vector<Point3D> points;
-    std::vector<TriangleMesh> faces;
-  };
-
-  void generateMesh(cv::Mat input, std::vector<Mesh>* meshes);
+  void generateMesh(cv::Mat& input, std::vector<Mesh>* meshes);
 
 private:
   int _minValue;
