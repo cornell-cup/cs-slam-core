@@ -4,6 +4,9 @@
 #include <GL/glut.h>
 #endif
 
+#include <iostream>
+#include <unistd.h>
+
 GLfloat points[4][6] = {
 	{0,0,0,0,0,0},
 	{0,1,0,1,0,0},
@@ -86,6 +89,10 @@ void mouseMotion(int x, int y) {
 	}
 }
 
+void idleFunc() {
+	std::cout << "idle" << std::endl;
+}
+
 int main(int argc, char **argv) {
   glutInit(&argc, argv);
 
@@ -102,7 +109,9 @@ int main(int argc, char **argv) {
 
   init();
 
-  glutMainLoop();
+	glutIdleFunc(idleFunc);
+
+	glutMainLoop();
 
   return 0;
 }

@@ -16,7 +16,7 @@ public:
   
   virtual ~Visualizer();
 
-  void visualizePoints(cv::Mat& mat);
+  void visualizePoints(cv::Mat* mat);
 
 private:
   Visualizer(int res);

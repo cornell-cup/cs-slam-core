@@ -34,7 +34,12 @@ Visualizer::Visualizer(int res) {
 
   _init();
 
-  // glutMainLoop();
+  glutMainLoop();
+}
+
+Visualizer::visualizePoints(cv::Mat* mat) {
+
+  glutPostRedisplay();
 }
 
 Visualizer::~Visualizer() {}
@@ -52,7 +57,12 @@ void Visualizer::_display() {
 	glRotatef(_instance->_xrot, 1.0f, 0.0f, 0.0f);
 	glRotatef(_instance->_yrot, 0.0f, 1.0f, 0.0f);
 
-  // drawPoints();
+	glBegin(GL_POINTS);
+  for (int i = 0; i < _instance->_numPoints; i+=_instance->_resolution){
+			// glColor3f(_instance->_points[i][3], points[i][4], points[i][5]);
+      glVertex3f(_instance->_pointMat[i][0], _instance->_pointMat[i][1], _instance->_pointMat[i][2]);
+  }
+  glEnd();
 
 	glFlush();
   glutSwapBuffers();
@@ -90,7 +100,5 @@ void Visualizer::_mouseMove(int x, int y) {
 	if (_instance->_mouseDown) {
 		_instance->_yrot = x - _instance->_xdiff;
 		_instance->_xrot = y + _instance->_ydiff;
-
-		glutPostRedisplay();
 	}
 }
