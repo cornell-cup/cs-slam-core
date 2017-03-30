@@ -10,17 +10,30 @@ public:
   MeshGenerator();
   virtual ~MeshGenerator();
 
-  struct mesh {
-    std::vector<int[3]> points;
-    std::vector<int[3]> faces;
+  struct Point3D {
+    int x;
+    int y;
+    int z;
   };
 
-  void generateMesh(cv::Mat input, std::vector<mesh>* meshes);
+  struct TriangleMesh {
+    int p1;
+    int p2;
+    int p3;
+  };
+
+  struct Mesh {
+    std::vector<Point3D> points;
+    std::vector<TriangleMesh> faces;
+  };
+
+  void generateMesh(cv::Mat input, std::vector<Mesh>* meshes);
 
 private:
   int _minValue;
   int _resolution;
   int _diffThreshold;
+  int _minPoints;
 };
 
 #endif
