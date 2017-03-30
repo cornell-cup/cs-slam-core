@@ -5,12 +5,22 @@
 
 #include <vector>
 
-class MeshGenerator() {
+class MeshGenerator {
 public:
-  MeshGenerator(int minValue);
+  MeshGenerator();
   virtual ~MeshGenerator();
 
-  generateMesh(cv::Mat input, std::vector<int[3]>* points, std::vector<int[3]>* faces);
+  struct mesh {
+    std::vector<int[3]> points;
+    std::vector<int[3]> faces;
+  };
+
+  void generateMesh(cv::Mat input, std::vector<mesh>* meshes);
+
+private:
+  int _minValue;
+  int _resolution;
+  int _diffThreshold;
 };
 
 #endif

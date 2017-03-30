@@ -2,9 +2,12 @@
 
 #include "disparitypipeline.h"
 
+std::function<int(int, int)> getDispValue;
+
 void mouseCallBackFunc(int event, int x, int y, int flags, void* userdata) {
      if  (event == cv::EVENT_LBUTTONDOWN ){
           std::cout << "Left button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
+					std::cout << "Disparity value: " << getDispValue(x,y) << std::endl;
      }
      else if  (event == cv::EVENT_RBUTTONDOWN){
           std::cout << "Right button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
@@ -17,6 +20,8 @@ void mouseCallBackFunc(int event, int x, int y, int flags, void* userdata) {
      }
 }
 
+
+
 int main() {
 	std::cout << "starting program" << std::endl;
 
@@ -28,6 +33,10 @@ int main() {
 	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
 	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera);
+
+	getDispValue = [&pipeline](int x, int y) -> int {
+		return pipeline.getDepthAt(y,x);
+	};
 
   // set the mouse callback
   pipeline.setDisparityMouseCallback(mouseCallBackFunc);
