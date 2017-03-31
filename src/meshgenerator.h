@@ -40,7 +40,6 @@ private:
   int _minValue;
   int _resolution;
   int _diffThreshold;
-  int _minPoints;
   int _minMeshes;
 
   int _clipXLeft;

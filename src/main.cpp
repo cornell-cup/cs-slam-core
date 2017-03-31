@@ -32,7 +32,7 @@ int main() {
 
 		pipeline.updateDisplay();
 
-		meshGenerator.generateMesh(pipeline.getDisparityNorm());
+		meshGenerator.generateMesh(pipeline.getDisparity());
 
 		// check if the esc key has been pressed to exit the loop
 		int key = cv::waitKey(1);

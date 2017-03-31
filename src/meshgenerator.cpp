@@ -6,15 +6,15 @@ MeshGenerator::MeshGenerator() {
 
 	// the resolution of the mesh (1 is the best but takes the longest)
 	// also determines pixel's neighboring distance
-  _resolution = 8;
+  _resolution = 4;
 
 	// the threshold between two neighboring pixel's depth gradient to put them on the same mesh
-  _diffThreshold = 10;
+  // usually ~ 2*resolution
+  _diffThreshold = 8;
 
-	// the minumum number of points a mesh must have
-  _minPoints = 20;
 	// the minimum number of faces a mesh must have
-  _minMeshes = 30;
+	// usually ~ 200/resolution
+  _minMeshes = 50;
 
 	// ignore points to the left of this x pos (always 0)
 	_clipXLeft = 90;
@@ -58,9 +58,10 @@ void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
 			int x = _meshes[r].points[i].x;
 			int y = _meshes[r].points[i].y;
 			int z = _meshes[r].points[i].z;
-			int colIdx = (h-y)*w + x;
+			int colIdx = y*w + x;
 			_reprojectTo3D(x, y, z, h, w, projectMat);
 
+			//myfile << x << " " << y << " " << z << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
 			myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
 		}
 	}
@@ -77,10 +78,9 @@ void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
 }
 
 void MeshGenerator::_reprojectTo3D(int x, int y, int disp, int h, int w, float* dest) {
-	float scaleParam = disp;
-	dest[0] = (x-0.5f*w)/scaleParam;
-	dest[1] = (-y+0.5f*h)/scaleParam;
-	dest[2] = (-0.8*w)/scaleParam;
+	dest[0] = (x-0.5f*w)/ disp;
+	dest[1] = (-y+0.5f*h)/ disp;
+	dest[2] = (-0.8*w)/ disp;
 }
 
 void MeshGenerator::generateMesh(cv::Mat* input) {
@@ -127,8 +127,8 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
 					int y = _meshes[matchIdx - 1].points[i].y;
 					int z = _meshes[matchIdx - 1].points[i].z;
 					_meshes[newMatchIdx - 1].points.push_back({x, y, z});
-					pointIdx.at<int>(h-y, x) = _meshes[newMatchIdx - 1].points.size() - 1;
-					meshIdx.at<int>(h-y, x) = newMatchIdx;
+					pointIdx.at<int>(y, x) = _meshes[newMatchIdx - 1].points.size() - 1;
+					meshIdx.at<int>(y, x) = newMatchIdx;
 				}
 				_meshes[matchIdx - 1].points.clear();
 				//_meshes[newMatchIdx - 1].points.insert(_meshes[newMatchIdx - 1].points.end(), _meshes[matchIdx - 1].points.begin(), _meshes[matchIdx - 1].points.end());
@@ -151,7 +151,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
 			std::vector<Point3D> points;
 			std::vector<TriangleMesh> meshes;
           // add this point to the mesh (x,y,z)
-			points.push_back({ c, h-r, value });
+			points.push_back({ c, r, value });
 			pointIdx.at<int>(r, c) = points.size() - 1;
 
 		  _meshes.push_back({ points, meshes });
@@ -161,7 +161,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
         else {
 					// TODO why won't this work
           //Mesh mesh = _meshes[matchIdx-1];
-			_meshes[matchIdx - 1].points.push_back({ c, h-r, value });
+			_meshes[matchIdx - 1].points.push_back({ c, r, value });
 		  meshIdx.at<int>(r, c) = matchIdx;
           pointIdx.at<int>(r, c) = _meshes[matchIdx - 1].points.size() - 1;
 
@@ -185,7 +185,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
 
   // remove the small meshes
   for(r = 0; r < _meshes.size(); r++) {
-    if(_meshes[r].points.size() < _minPoints || _meshes[r].faces.size() < _minMeshes) {
+    if(_meshes[r].faces.size() < _minMeshes) {
 	  _meshes.erase(_meshes.begin() + r);
       r--;
     }
