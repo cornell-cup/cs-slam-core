@@ -4,6 +4,10 @@
 #include <opencv2/core/core.hpp>
 
 #include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <cmath>
 
 struct Point3D {
   int x;
@@ -27,13 +31,17 @@ public:
   MeshGenerator();
   virtual ~MeshGenerator();
 
-  void generateMesh(cv::Mat& input, std::vector<Mesh>* meshes);
+  void generateMesh(cv::Mat* input);
+  void writeToFile(std::string fname, cv::Mat* color);
 
 private:
   int _minValue;
   int _resolution;
   int _diffThreshold;
   int _minPoints;
+  int _minMeshes;
+
+  std::vector<Mesh> _meshes;
 };
 
 #endif

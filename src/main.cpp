@@ -20,8 +20,6 @@ int main() {
 
 	MeshGenerator meshGenerator = MeshGenerator();
 
-	std::vector<Mesh> meshes;
-
 	// set to true to quit the loop
 	int quit = 0;
 	while (!quit){
@@ -29,15 +27,15 @@ int main() {
 
 		pipeline.updateDisplay();
 
-		meshes.clear();
-		meshGenerator.generateMesh(*pipeline.getDisparity(), &meshes);
+		meshGenerator.generateMesh(pipeline.getDisparityNorm());
 
 		// check if the esc key has been pressed to exit the loop
 		int key = cv::waitKey(1);
 		if (key == 27) // esc
 			quit = 1;
 		else if (key == 112)	// p
-			pipeline.writePointCloud("points.ply");
+			meshGenerator.writeToFile("mesh.ply", pipeline.getColorMat());
+			//pipeline.writePointCloud("points.ply");
 		else if (key == 115)
 			pipeline.nudge(1);
 		else if (key == 119)

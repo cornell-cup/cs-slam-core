@@ -21,12 +21,15 @@ public:
 	void nextFrame();
 
 	cv::Mat* getDisparity();
+	cv::Mat* getDisparityNorm();
+	cv::Mat* getColorMat();
 
 	void writePointCloud(std::string fname);
 
 	void updateDisplay();
 
-	int getDepthAt(int r, int c);
+	short getDepthAt(int r, int c);
+	unsigned char getDepthAtNorm(int r, int c);
 
 	void setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata));
 
