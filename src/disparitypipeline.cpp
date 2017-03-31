@@ -135,7 +135,3 @@ cv::Mat DisparityPipeline::translateImg(cv::Mat &img, int offsetx, int offsety) 
 	cv::warpAffine(img, img, trans_mat, img.size());
 	return trans_mat;
 }
-
-int DisparityPipeline::_currentTime() {
-	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-}

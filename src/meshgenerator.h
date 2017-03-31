@@ -35,11 +35,15 @@ public:
   void writeToFile(std::string fname, cv::Mat* color);
 
 private:
+  void _reprojectTo3D(int x, int y, int disp, int h, int w, float* dest);
+
   int _minValue;
   int _resolution;
   int _diffThreshold;
   int _minPoints;
   int _minMeshes;
+
+  int _clipXLeft;
 
   std::vector<Mesh> _meshes;
 };

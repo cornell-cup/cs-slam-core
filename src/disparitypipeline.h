@@ -4,7 +4,6 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <chrono>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -40,8 +39,6 @@ private:
 
 	cv::Mat translateImg(cv::Mat &img, int offsetx, int offsety);
 	int _nudgeAmount;
-
-	int _currentTime();
 
 	cv::Mat _disparity;
 	cv::Mat _disparity_norm;

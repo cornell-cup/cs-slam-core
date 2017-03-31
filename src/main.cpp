@@ -3,6 +3,7 @@
 #include "disparitypipeline.h"
 #include "meshgenerator.h"
 #include "mousehandler.h"
+#include "profiler.h"
 
 int main() {
 	std::cout << "starting program" << std::endl;
@@ -20,9 +21,13 @@ int main() {
 
 	MeshGenerator meshGenerator = MeshGenerator();
 
+	Profiler loopTime;
+	loopTime.start();
+
 	// set to true to quit the loop
 	int quit = 0;
 	while (!quit){
+		loopTime.split();
 		pipeline.nextFrame();
 
 		pipeline.updateDisplay();
