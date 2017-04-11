@@ -2,6 +2,8 @@
 
 OpenCVCamera::OpenCVCamera(unsigned int id) : _id(id) , _capture(_id){};
 
+OpenCVCamera::OpenCVCamera(std::string filename) : _capture(filename) {};
+
 OpenCVCamera::~OpenCVCamera(){}
 
 void OpenCVCamera::loadCalibration(std::string cam_mat, std::string dist_mat) {

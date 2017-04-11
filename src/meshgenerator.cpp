@@ -54,6 +54,11 @@ void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
 	float projectMat[3];
 
 	for (int r = 0; r < numMeshes; r++) {
+
+		int colorr = (char) (r*333);
+		int colorg = (char) (r*651);
+		int colorb = (char) (r*17);
+
 		for (int i = 0; i < _meshes[r].points.size(); i++) {
 			int x = _meshes[r].points[i].x;
 			int y = _meshes[r].points[i].y;
@@ -62,7 +67,8 @@ void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
 			_reprojectTo3D(x, y, z, h, w, projectMat);
 
 			//myfile << x << " " << y << " " << z << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
-			myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
+			//myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
+			myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colorr << " " << colorg << " " << colorb << " " << std::endl;
 		}
 	}
 

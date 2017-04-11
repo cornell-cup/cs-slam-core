@@ -6,11 +6,14 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include <fstream>
+#include <string>
 
 class OpenCVCamera
 {
 public:
 	OpenCVCamera(unsigned int id);
+	OpenCVCamera(std::string filename);
+
 	// destructor
 	virtual ~OpenCVCamera();
 
