@@ -1,22 +1,22 @@
-#include "opencvcamera.h"
+#include "physicalcamera.h"
 
-OpenCVCamera::OpenCVCamera(unsigned int id) : _id(id) , _capture(_id){};
+PhysicalCamera::PhysicalCamera(unsigned int id) : _id(id) , _capture(_id){};
 
-OpenCVCamera::~OpenCVCamera(){}
+PhysicalCamera::~PhysicalCamera(){}
 
-void OpenCVCamera::loadCalibration(std::string cam_mat, std::string dist_mat) {
+void PhysicalCamera::loadCalibration(std::string cam_mat, std::string dist_mat) {
 	_cameraMatrix = _readMatFromTxt(cam_mat, 3, 3);
 	_distanceCoeff = _readMatFromTxt(dist_mat, 1, 5);
 }
 
-void OpenCVCamera::configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate)
+void PhysicalCamera::configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate)
 {
 	_capture.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
 	_capture.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
 	_capture.set(CV_CAP_PROP_FPS, frame_rate);
 }
 
-void OpenCVCamera::capture(cv::Mat& dest){
+void PhysicalCamera::capture(cv::Mat& dest){
 	if(!(_cameraMatrix.empty() || _distanceCoeff.empty())) {
 		cv::Mat tempdest;
 		_capture >> tempdest;
@@ -27,28 +27,28 @@ void OpenCVCamera::capture(cv::Mat& dest){
 	}
 }
 
-unsigned int OpenCVCamera::getHeight() const
+unsigned int PhysicalCamera::getHeight() const
 {
 	return getAttribute(CV_CAP_PROP_FRAME_HEIGHT);
 }
 
-unsigned int OpenCVCamera::getWidth() const
+unsigned int PhysicalCamera::getWidth() const
 {
 	return getAttribute(CV_CAP_PROP_FRAME_WIDTH);
 }
 
-unsigned int OpenCVCamera::getFrameRate() const
+unsigned int PhysicalCamera::getFrameRate() const
 {
 	return getAttribute(CV_CAP_PROP_FPS);
 }
 
-unsigned int OpenCVCamera::getAttribute(unsigned int id) const
+unsigned int PhysicalCamera::getAttribute(unsigned int id) const
 {
 	return _capture.get(id);
 }
 
 
-cv::Mat OpenCVCamera::_readMatFromTxt(std::string filename, int rows, int cols) {
+cv::Mat PhysicalCamera::_readMatFromTxt(std::string filename, int rows, int cols) {
 	float m;
 	cv::Mat out = cv::Mat::zeros(rows, cols, CV_32F); //Matrix to store values
 

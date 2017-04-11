@@ -1,18 +1,18 @@
-#ifndef _SLAM_OPENCVCAMERA
-#define _SLAM_OPENCVCAMERA
+#ifndef _SLAM_PHYSICALCAMERA
+#define _SLAM_PHYSICALCAMERA
 
-#include <opencv2/core/core.hpp>
+#include "camera.h"
+
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
 #include <fstream>
 
-class OpenCVCamera
-{
+class PhysicalCamera: public Camera {
 public:
-	OpenCVCamera(unsigned int id);
+	PhysicalCamera(unsigned int id);
 	// destructor
-	virtual ~OpenCVCamera();
+	virtual ~PhysicalCamera();
 
 	void capture(cv::Mat& dest);
 
