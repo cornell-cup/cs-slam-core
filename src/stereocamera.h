@@ -1,5 +1,5 @@
-#ifndef _SLAM_STEREOCAMERA
-#define _SLAM_STEREOCAMERA
+#ifndef _SLAM_CAMERA
+#define _SLAM_CAMERA
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -7,12 +7,12 @@
 #include <ctime>
 #include <memory>
 
-#include "camera.h"
+#include "opencvcamera.h"
 
 class StereoCamera {
 public:
 
-	StereoCamera(Camera* left, Camera* right);
+	StereoCamera(OpenCVCamera& left, OpenCVCamera& right);
 
 	virtual ~StereoCamera();
 
@@ -22,8 +22,8 @@ public:
 	unsigned int getHeight() const;
 
 private:
-	Camera* _cameraLeft;
-	Camera* _cameraRight;
+	OpenCVCamera _cameraLeft;
+	OpenCVCamera _cameraRight;
 
 };
 

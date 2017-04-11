@@ -9,12 +9,12 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include "stereocamera.h"
-#include "physicalcamera.h"
+#include "opencvcamera.h"
 #include "depthmap.h"
 
 class DisparityPipeline {
 public:
-	DisparityPipeline(PhysicalCamera* leftCamera, PhysicalCamera* rightCamera);
+	DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera);
 	virtual ~DisparityPipeline();
 
 	void nextFrame();

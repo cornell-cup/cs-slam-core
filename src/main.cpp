@@ -7,6 +7,7 @@
 
 int main() {
 	std::cout << "starting program" << std::endl;
+
 	OpenCVCamera leftCamera = OpenCVCamera(1);
 	//leftCamera = OpenCVCamera("resources/right.avi");
 
@@ -15,10 +16,11 @@ int main() {
 
 	OpenCVCamera rightCamera = OpenCVCamera(0);
 	//rightCamera = OpenCVCamera("resources/left.avi");
+
 	rightCamera.configure(640, 480, 30);
 	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
-	DisparityPipeline pipeline = DisparityPipeline(&leftCamera, &rightCamera);
+	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera);
 
 	MouseHandler::initialize(&pipeline);
 

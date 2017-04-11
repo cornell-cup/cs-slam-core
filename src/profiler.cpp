@@ -23,5 +23,5 @@ void Profiler::split() {
 void Profiler::stop() {
   int curTime = _currentTime();
 
-  std::cout << "\r" << ((curTime - _startTime) / 1000000) << std::endl;
+  std::cout << "\rTotal time: " << ((curTime - _startTime) / 1000000) << std::endl;
 }
