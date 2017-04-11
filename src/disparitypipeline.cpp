@@ -14,7 +14,7 @@ const std::string DisparityPipeline::_plyHeaderPt2 = "property float x\n"
 
 const int leftCuttof = 90;
 
-DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera): _camera(leftCamera, rightCamera) {
+DisparityPipeline::DisparityPipeline(PhysicalCamera* leftCamera, PhysicalCamera* rightCamera): _camera(leftCamera, rightCamera) {
 
 	// intialize the depth map pipeline step
 	_dpMap = DepthMap();
