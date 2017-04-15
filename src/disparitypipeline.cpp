@@ -59,6 +59,14 @@ cv::Mat* DisparityPipeline::getDisparity() {
 	return &_disparity;
 }
 
+float DisparityPipeline::getDistanceAt(int r, int c) {
+	int value = getDepthAt(r, c);
+	if (value < 400 || value > 1400) {
+		return -1;
+	}
+	return 307.0991 + value*-0.1584;
+}
+
 short DisparityPipeline::getDepthAt(int r, int c) {
 	return _disparity.at<short>(r,c);
 }

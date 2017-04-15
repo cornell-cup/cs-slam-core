@@ -39,6 +39,11 @@ private:
 	cv::Mat _distanceCoeff;
 
 	cv::Mat _readMatFromTxt(std::string filename, int rows, int cols);
+
+	std::vector<cv::Mat> _map1;
+	std::vector<cv::Mat> _map2;
+
+	void _setMaps(cv::Mat& _src);
 };
 
 #endif

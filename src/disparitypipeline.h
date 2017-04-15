@@ -29,6 +29,8 @@ public:
 
 	short getDepthAt(int r, int c);
 	unsigned char getDepthAtNorm(int r, int c);
+	
+	float getDistanceAt(int r, int c);
 
 	void setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata));
 
