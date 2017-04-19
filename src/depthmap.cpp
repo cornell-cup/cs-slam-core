@@ -6,7 +6,7 @@ DepthMap::DepthMap() {
 	int p2 = 4 * p1;
 
 	int minDisparity = 25;
-	int numDisparities = 64;
+	int numDisparities = 64; 
 	int blockSize = 9;
 	int disp12MaxDiff = 1;
 	int preFilterCap = 63;
@@ -27,10 +27,12 @@ DepthMap::DepthMap() {
 		speckleRange
 	);
 
+	_stereoBM = cv::StereoBM::create(128, 21);
 }
 
 DepthMap::~DepthMap() {}
 
 void DepthMap::getDisparity(cv::Mat& left_img, cv::Mat& right_img, cv::Mat& disp_dest) {
 	_stereoSGBM->compute(left_img, right_img, disp_dest);
+	//_stereoBM->compute(left_img, right_img, disp_dest);
 }

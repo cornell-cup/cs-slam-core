@@ -16,12 +16,12 @@ void Profiler::start() {
 void Profiler::split() {
   int curTime = _currentTime();
 
-  std::cout << "\r" << ((curTime-_prevTime)/1000000);
+  std::cout << "\r" << ((curTime-_prevTime)/1000000) << "     ";
   _prevTime = curTime;
 }
 
 void Profiler::stop() {
   int curTime = _currentTime();
 
-  std::cout << "\rTotal time: " << ((curTime - _startTime) / 1000000) << std::endl;
+  std::cout << "\rTotal time: " << ((curTime - _startTime) / 1000000) << "     " << std::endl;
 }
