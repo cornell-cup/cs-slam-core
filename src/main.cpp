@@ -5,17 +5,25 @@
 #include "mousehandler.h"
 #include "profiler.h"
 
+#define _USE_FILES
+
 int main() {
 	std::cout << "starting program" << std::endl;
 
+	#ifdef _USE_FILES
+	OpenCVCamera leftCamera = OpenCVCamera("resources/right.mp4");
+	#else
 	OpenCVCamera leftCamera = OpenCVCamera(1);
-	//leftCamera = OpenCVCamera("resources/right.avi");
+	#endif
 
 	leftCamera.configure(640, 480, 30);
 	leftCamera.loadCalibration("calibration_mats/cam_mats_left", "calibration_mats/dist_coefs_left");
 
+	#ifdef _USE_FILES
+	OpenCVCamera rightCamera = OpenCVCamera("resources/left.mp4");
+	#else
 	OpenCVCamera rightCamera = OpenCVCamera(0);
-	//rightCamera = OpenCVCamera("resources/left.avi");
+	#endif
 
 	rightCamera.configure(640, 480, 30);
 	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");

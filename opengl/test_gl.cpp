@@ -7,13 +7,11 @@
 #include <iostream>
 #include <unistd.h>
 
-GLfloat points[4][6] = {
-	{0,0,0,0,0,0},
-	{0,1,0,1,0,0},
-	{1,0,0,1,1,0},
-	{0,0,1,0,1,0}
-};
-int numPoints = 4;
+
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+
+boost::interprocess::mapped_region shared_region;
 
 bool fullscreen = false;
 bool mouseDown = false;
@@ -26,14 +24,24 @@ float ydiff = 0.0f;
 
 void drawPoints() {
 	glBegin(GL_POINTS);
-  for ( int i = 0; i < numPoints; ++i ){
-			glColor3f(points[i][3], points[i][4], points[i][5]);
-      glVertex3f(points[i][0], points[i][1], points[i][2]);
+	int size = static_cast<int>(shared_region.get_size());
+	size = size/4;
+	float *points = static_cast<float*>(shared_region.get_address());
+  for (int i = 0; i < size; i+=4 ){
+			glVertex3f(points[i], points[i+1], points[i+2]);
+			int c = ((int) points[i+3]);
+      glColor3f(
+				(c & 0xff)/255.f,
+				((c >> 8) & 0xff)/255.f,
+				((c >> 16) & 0xff)/255.f
+			);
   }
   glEnd();
 }
 
 void display() {
+	// std::cout << "display" << std::endl;
+
 	glClearColor( 1.0f, 1.0f, 1.0f, 1.0f );
   // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -56,7 +64,7 @@ void init() {
 	glEnable(GL_POINT_SMOOTH);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glPointSize(6.0);
+  glPointSize(1.0);
 
   /* Use depth buffering for hidden surface elimination. */
   // glEnable(GL_DEPTH_TEST);
@@ -67,6 +75,21 @@ void init() {
     /* aspect ratio */ 1.0,
     /* Z near */ 1.0, /* Z far */ 10.0);
   glMatrixMode(GL_MODELVIEW);
+
+	try {
+		boost::interprocess::shared_memory_object shared_points_object = boost::interprocess::shared_memory_object(
+			boost::interprocess::open_only,
+			"SharedPoints",
+			boost::interprocess::read_only
+		);
+
+		//Map the whole shared memory in this process
+		shared_region = boost::interprocess::mapped_region(shared_points_object, boost::interprocess::read_only);
+
+		std::cout << "initialized point memory" << std::endl;
+	} catch (const std::exception&) {
+		std::cout << "Points DNE" << std::endl;
+	}
 }
 
 void mouse(int button, int state, int x, int y) {
@@ -85,12 +108,14 @@ void mouseMotion(int x, int y) {
 		yrot = x - xdiff;
 		xrot = y + ydiff;
 
-		glutPostRedisplay();
+		// glutPostRedisplay();
 	}
 }
 
-void idleFunc() {
-	std::cout << "idle" << std::endl;
+
+void glutTimer(int value){
+	glutPostRedisplay();
+	glutTimerFunc(1, glutTimer, 1);
 }
 
 int main(int argc, char **argv) {
@@ -109,7 +134,8 @@ int main(int argc, char **argv) {
 
   init();
 
-	glutIdleFunc(idleFunc);
+	// glutIdleFunc(idleFunc);
+	glutTimerFunc(10, glutTimer, 1);
 
 	glutMainLoop();
 

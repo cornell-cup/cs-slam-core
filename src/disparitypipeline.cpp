@@ -126,10 +126,14 @@ void DisparityPipeline::writePointCloud(std::string fname) {
 }
 
 void DisparityPipeline::updateDisplay() {
-	// display the images
-	cv::imshow("left", _left);
-	cv::imshow("right", _right);
-	cv::imshow("disparity", _disparity_norm);
+	if (_left.empty() || _right.empty()) {
+		std::cout << "no image" << std::endl;
+	} else {
+		// display the images
+		cv::imshow("left", _left);
+		cv::imshow("right", _right);
+		cv::imshow("disparity", _disparity_norm);
+	}
 }
 
 DisparityPipeline::~DisparityPipeline() {}
