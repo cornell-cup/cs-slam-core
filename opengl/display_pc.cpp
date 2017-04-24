@@ -22,22 +22,37 @@ float yrot = 0.0f;
 float xdiff = 0.0f;
 float ydiff = 0.0f;
 
+int imgWidth = 640;
+int imgHeight = 480;
+
 void drawPoints() {
 	glBegin(GL_POINTS);
 	int size = static_cast<int>(shared_region.get_size());
 	size = size/4;
-	float *points = static_cast<float*>(shared_region.get_address());
-  for (int i = 0; i < size; i+=4 ){
-			glVertex3f(points[i], points[i+1], points[i+2]);
-			int c = ((int) points[i+3]);
-      glColor3f(
-				(c & 0xff)/255.f,
-				((c >> 8) & 0xff)/255.f,
-				((c >> 16) & 0xff)/255.f
-			);
+	int *points = static_cast<int*>(shared_region.get_address());
+  for (int i = 0; i < size; i+=2){
+		// get the point data
+		int x = (i/2)%imgWidth;
+		int y = (i/2)/imgWidth;
+		int z = points[i];
+
+		// reproject the points to 3d
+		glVertex3f(
+			(x-0.5f*imgWidth)/z,
+			(-y+0.5f*imgHeight)/z,
+			(-0.8*imgWidth)/z
+		);
+
+		glColor3f(
+			(points[i+1] & 0xff)/255.f,
+			((points[i+1] >> 8) & 0xff)/255.f,
+			((points[i+1] >> 16) & 0xff)/255.f
+		);
   }
   glEnd();
 }
+
+
 
 void display() {
 	// std::cout << "display" << std::endl;
@@ -47,7 +62,7 @@ void display() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glLoadIdentity();
-	gluLookAt(0.0, 0.0, 5.0,  /* eye is at (0,0,5) */
+	gluLookAt(0.0, 0.0, 3.0,  /* eye is at (0,0,5) */
     0.0, 0.0, 0.0,      /* center is at (0,0,0) */
     0.0, 1.0, 0.);      /* up is in positive Y direction */
 

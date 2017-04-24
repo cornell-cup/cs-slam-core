@@ -1,52 +1,65 @@
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/mapped_region.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <cstring>
 #include <cstdlib>
 #include <string>
 #include <stdio.h>
 #include <iostream>
+#include <memory>
+
+#include "wrapper.h"
 
 int main(int argc, char *argv[])
 {
    using namespace boost::interprocess;
 
    int byte_value = 45;
-   int memSize = 6*4;
+   int memSize = 20*2;
 
    if(argc == 1){  //Parent process
      std::cout << "Starting Parent" << std::endl;
       //Remove shared memory on construction and destruction
-      struct shm_remove
-      {
-         shm_remove() { shared_memory_object::remove("SharedPoints"); }
-         ~shm_remove(){ shared_memory_object::remove("SharedPoints"); }
-      } remover;
+      // struct shm_remove
+      // {
+      //    shm_remove() { shared_memory_object::remove("SharedPoints"); }
+      //    ~shm_remove(){ shared_memory_object::remove("SharedPoints"); }
+      // } remover;
+      //
+      // // shared_memory_object::remove("SharedPoints");
+      //
+      // //Create a shared memory object.
+      // shared_memory_object shm (create_only, "SharedPoints", read_write);
+      //
+      // //Set size
+      // shm.truncate(memSize*4);
+      //
+      // //Map the whole shared memory in this process
+      // mapped_region region(shm, read_write);
 
-      // shared_memory_object::remove("SharedPoints");
-
+      // int *ptr = static_cast<float*>(region.get_address());
+      shared_memory_object::remove("SharedPoints");
       //Create a shared memory object.
-      shared_memory_object shm (create_only, "SharedPoints", read_write);
+      shared_memory_object shm(create_only, "SharedPoints", read_write);
 
-      //Set size
       shm.truncate(memSize*4);
 
-      //Map the whole shared memory in this process
+      //Set size
       mapped_region region(shm, read_write);
+      Wrapper wrapper(region);
+      int *ptr = wrapper.getPTR();
 
-      float *ptr = static_cast<float*>(region.get_address());
-      std::cout << "Size: " << static_cast<int>(region.get_size()) << std::endl;
-      std::cout << "Address: " << region.get_address() << std::endl;
+      ptr[0] = 1;
+      std::cout << ptr << std::endl;
+      std::cout << ptr[0] << std::endl;
 
-      float points[4][6] = {
-      	{0,0,0,0,0,0},
-      	{0,0.1f,0,1.f,0,0},
-      	{0.1f,0,0,1.f,1.f,0},
-      	{0,0,0.1f,0,1.f,0}
-      };
+      // std::cout << "Size: " << static_cast<int>(region.get_size()) << std::endl;
+      // std::cout << "Address: " << region.get_address() << std::endl;
 
-      for(int i = 0; i < memSize; i++) {
-        ptr[i] = points[i/6][i%6];
-        // std::cout << "wrote: " << ptr[i] << std::endl;
+      for(int i = 0; i < memSize; i+=2) {
+        ptr[i] = (rand() % 900) + 100;
+        ptr[i+1] = rand();
+        std::cout << "wrote: " << ptr[i] << std::endl;
       }
 
       // //Write all the memory to 1
@@ -58,6 +71,7 @@ int main(int argc, char *argv[])
       //   // idle
       // }
 
+      std::cout << "Starting Child" << std::endl;
       //Launch child process
       std::string s = "./../opengl/build/build";
       if(0 != std::system(s.c_str()))
