@@ -6,6 +6,7 @@ slam.dSYM
 
 # local compile scripts
 compile.sh
+compile.bat
 
 # build
 /build
