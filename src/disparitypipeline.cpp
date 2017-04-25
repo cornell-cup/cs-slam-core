@@ -14,8 +14,6 @@ const std::string DisparityPipeline::_plyHeaderPt2 = "property float x\n"
 
 const int leftCuttof = 90;
 
-const int pointSize = 2;
-
 DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera): _camera(leftCamera, rightCamera) {
 
 	// intialize the depth map pipeline step
@@ -29,8 +27,6 @@ DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rig
 	cv::namedWindow("left");
 	cv::namedWindow("right");
 	cv::namedWindow("disparity");
-
-	_max_points = _camera.getWidth() * _camera.getHeight();
 }
 
 void DisparityPipeline::nextFrame() {
@@ -91,33 +87,6 @@ unsigned char DisparityPipeline::getDepthAtNorm(int r, int c) {
 void DisparityPipeline::setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata)) {
 	//set the callback function for any mouse event
  	cv::setMouseCallback("disparity", cbFunc, NULL);
-}
-
-void DisparityPipeline::setSharedMemorySize(boost::interprocess::shared_memory_object& shm) {
-	shm.truncate(_max_points*pointSize*4);
-}
-
-void DisparityPipeline::setSharedMemoryLocation(int * ptr) {
-	_shared_ptr = ptr;
-}
-
-void DisparityPipeline::updateSharedMemory() {
-	cv::Mat colors = _left.reshape(1, _camera.getWidth()*_camera.getHeight());
-
-	for(int i = 0; i < _max_points; i++) {
-		int x = i%_camera.getWidth();
-		if(x < leftCuttof)
-			continue;
-			
-		int y = i/_camera.getWidth();
-		_shared_ptr[i*2] = ((int) getDepthAt(y,x));
-
-		int c = ((int) colors.at<unsigned char>(i, 0));
-		c |= ((int) colors.at<unsigned char>(i, 1)) << 8;
-		c |= ((int) colors.at<unsigned char>(i, 2)) << 16;
-
-		_shared_ptr[i*2 + 1] = c;
-	}
 }
 
 void DisparityPipeline::writePointCloud(std::string fname) {

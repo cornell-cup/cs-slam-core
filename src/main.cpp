@@ -5,11 +5,6 @@
 #include "mousehandler.h"
 #include "profiler.h"
 
-
-#include <boost/interprocess/shared_memory_object.hpp>
-#include <boost/interprocess/mapped_region.hpp>
-
-
 #define _USE_FILES
 
 int main() {
@@ -47,23 +42,11 @@ int main() {
 
 	int savedMesh = 0;
 
-	//Remove shared memory on construction
-	boost::interprocess::shared_memory_object::remove("SharedPoints");
-	//Create a shared memory object.
-	boost::interprocess::shared_memory_object shm(boost::interprocess::create_only, "SharedPoints", boost::interprocess::read_write);
-	pipeline.setSharedMemorySize(shm);
-
-	boost::interprocess::mapped_region shared_region(shm, boost::interprocess::read_write);
-	int * shared_ptr = static_cast<int*>(shared_region.get_address());
-	pipeline.setSharedMemoryLocation(shared_ptr);
-
 	while (!quit){
 		loopTime.split();
 		pipeline.nextFrame();
 
 		pipeline.updateDisplay();
-
-		pipeline.updateSharedMemory();
 
 		meshGenerator.generateMesh(pipeline.getDisparity());
 
@@ -86,6 +69,5 @@ int main() {
 			savedMesh = 0;
 		}
 	}
-	boost::interprocess::shared_memory_object::remove("SharedPoints");
 	return 0;
 }

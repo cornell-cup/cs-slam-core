@@ -8,8 +8,6 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-#include <boost/interprocess/shared_memory_object.hpp>
-
 #include "stereocamera.h"
 #include "opencvcamera.h"
 #include "depthmap.h"
@@ -37,10 +35,6 @@ public:
 	void setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata));
 
 	void nudge(int amount);
-
-	void updateSharedMemory();
-	void setSharedMemorySize(boost::interprocess::shared_memory_object& shm);
-	void setSharedMemoryLocation(int * ptr);
 private:
 	StereoCamera _camera;
 	DepthMap _dpMap;
@@ -56,9 +50,6 @@ private:
 
 	static const std::string _plyHeaderPt1;
 	static const std::string _plyHeaderPt2;
-
-	int * _shared_ptr;
-	int _max_points;
 };
 
 #endif
