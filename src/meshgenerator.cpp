@@ -47,7 +47,7 @@ void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
 
 	std::ofstream myfile;
 	myfile.open(fname);
-	
+
 	// setup header
 	myfile << "ply\nformat ascii 1.0\nelement vertex " << numVerts << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nelement face " << numFaces << "\nproperty list uchar int vertex_index\nend_header" << std::endl;
 
@@ -81,6 +81,10 @@ void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
 
 	myfile.close();
 	std::cout << "generated meshes" << std::endl;
+}
+
+std::vector<Mesh>* MeshGenerator::getMeshes() {
+  return &_meshes;
 }
 
 void MeshGenerator::_reprojectTo3D(int x, int y, int disp, int h, int w, float* dest) {
@@ -119,14 +123,14 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
 		// check if we can connect the current mesh with the above and to the right mesh
 		if (matchIdx != 0 && c + _resolution < w && r - _resolution >= 0 && std::abs(input->at<short>(r - _resolution, c + _resolution) - value) < _diffThreshold) {
 			int newMatchIdx = meshIdx.at<int>(r - _resolution, c + _resolution);
-			
+
 			// we can connect, check if different mesh
 			if (newMatchIdx != 0 && matchIdx != newMatchIdx) {
 				// connect meshes
 
 				// compute point index offset for the faces
 				int pointIdxOffset = _meshes[newMatchIdx - 1].points.size();
-				
+
 				// append the points to the connected mesh
 				for (int i = 0; i < _meshes[matchIdx - 1].points.size(); i++) {
 					int x = _meshes[matchIdx - 1].points[i].x;
@@ -145,7 +149,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
 				}
 				_meshes[matchIdx - 1].faces.clear();
 
-				// TODO figure out why this causes a memory error 
+				// TODO figure out why this causes a memory error
 				// probably something wrong with meshIdx resetting when the matchIdx != _meshes.size()
 				// _meshes.erase(_meshes.begin() + (matchIdx - 1));
 				matchIdx = newMatchIdx;
@@ -162,7 +166,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
 
 		  _meshes.push_back({ points, meshes });
           meshIdx.at<int>(r,c) = _meshes.size();
-        } 
+        }
         // append to mesh
         else {
 					// TODO why won't this work

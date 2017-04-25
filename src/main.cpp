@@ -4,6 +4,7 @@
 #include "meshgenerator.h"
 #include "mousehandler.h"
 #include "profiler.h"
+#include "map2d.h"
 
 #define _USE_FILES
 
@@ -42,6 +43,8 @@ int main() {
 
 	int savedMesh = 0;
 
+	Map2D map2d(300,300);
+
 	while (!quit){
 		loopTime.split();
 		pipeline.nextFrame();
@@ -49,6 +52,9 @@ int main() {
 		pipeline.updateDisplay();
 
 		meshGenerator.generateMesh(pipeline.getDisparity());
+
+		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
+		map2d.displayMap();
 
 		// check if the esc key has been pressed to exit the loop
 		int key = cv::waitKey(1);
