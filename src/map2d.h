@@ -35,7 +35,7 @@ private:
   std::vector<float> _yStops;
   std::vector<float> _yWeights;
 
-  float _weight_per_mesh_point;
+  float _alpha;
 };
 
 #endif
