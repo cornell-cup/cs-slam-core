@@ -10,7 +10,7 @@
 
 class Map2D {
 public:
-  Map2D(int w, int h);
+  Map2D();
   virtual ~Map2D();
 
   void updateMap(std::vector<Mesh>& meshes, int img_width, int img_height);
@@ -18,17 +18,24 @@ public:
   void displayMap();
 
 private:
-  void _plotPoint(int x, int y, float v);
+  const static int _mapDims = 25;
+  int _scaler;
 
-  void _addToMap(Point3D p, int h, int w);
+  void _plotPoint(int x, int y, int s, float v);
 
-  int _cent_x;
-  int _cent_y;
-
-  float _weight_per_mesh_point;
+  void _addToMap(Point3D p, int w, int h, int cent_x, int cent_y);
   float _multiplier;
 
+  float _getYWeight(float y);
+
   cv::Mat _map;
+  cv::Mat _tempMap;
+  cv::Mat _visualMat;
+
+  std::vector<float> _yStops;
+  std::vector<float> _yWeights;
+
+  float _weight_per_mesh_point;
 };
 
 #endif

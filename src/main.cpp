@@ -43,7 +43,7 @@ int main() {
 
 	int savedMesh = 0;
 
-	Map2D map2d(300,300);
+	Map2D map2d;
 
 	while (!quit){
 		loopTime.split();
