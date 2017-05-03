@@ -6,6 +6,8 @@
 class DepthMap {
   private:
     cv::Ptr<cv::StereoSGBM> _stereoSGBM;
+	cv::Ptr<cv::StereoBM> _stereoBM;
+
   public:
     DepthMap();
     virtual ~DepthMap();

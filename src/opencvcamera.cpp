@@ -2,11 +2,16 @@
 
 OpenCVCamera::OpenCVCamera(unsigned int id) : _id(id) , _capture(_id){};
 
+OpenCVCamera::OpenCVCamera(std::string filename) : _capture(filename) {};
+
 OpenCVCamera::~OpenCVCamera(){}
 
 void OpenCVCamera::loadCalibration(std::string cam_mat, std::string dist_mat) {
 	_cameraMatrix = _readMatFromTxt(cam_mat, 3, 3);
 	_distanceCoeff = _readMatFromTxt(dist_mat, 1, 5);
+
+	std::vector<cv::Mat> _map1;
+	std::vector<cv::Mat> _map2;
 }
 
 void OpenCVCamera::configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate)
@@ -20,10 +25,76 @@ void OpenCVCamera::capture(cv::Mat& dest){
 	if(!(_cameraMatrix.empty() || _distanceCoeff.empty())) {
 		cv::Mat tempdest;
 		_capture >> tempdest;
-		cv::undistort(tempdest, dest, _cameraMatrix, _distanceCoeff);
+
+		if (tempdest.empty()) {
+			_capture.set(CV_CAP_PROP_POS_AVI_RATIO, 0);
+			_capture >> tempdest;
+		}
+
+		_setMaps(tempdest);
+
+		cv::Mat src = ((cv::InputArray)tempdest).getMat();
+
+		dest.create(src.size(), src.type());
+		cv::Mat dst = ((cv::InputArray)dest).getMat();
+
+		int stripe_size0 = std::min(std::max(1, (1 << 12) / std::max(src.cols, 1)), src.rows);
+
+		int i = 0;
+		for (int y = 0; y < tempdest.rows; y += stripe_size0)
+		{
+			int stripe_size = std::min(stripe_size0, src.rows - y);
+			cv::Mat dst_part = dst.rowRange(y, y + stripe_size);
+			
+			remap(src, dst_part, _map1.at(i), _map2.at(i), cv::INTER_LINEAR, cv::BORDER_CONSTANT);
+			i++;
+		}
 	}
 	else {
 		_capture >> dest;
+	}
+}
+
+void OpenCVCamera::_setMaps(cv::Mat& _src) {
+	if (_map1.empty() || _map2.empty()) {
+		std::cout << "recalculate" << std::endl;
+
+		cv::Mat src = ((cv::InputArray )_src).getMat(), cameraMatrix = ((cv::InputArray)_cameraMatrix).getMat();
+		cv::Mat distCoeffs = ((cv::InputArray)_distanceCoeff).getMat();
+
+		cv::Mat newCameraMatrix;
+
+		int stripe_size0 = std::min(std::max(1, (1 << 12) / std::max(src.cols, 1)), src.rows);
+
+		cv::Mat_<double> A, Ar, I = cv::Mat_<double>::eye(3, 3);
+
+		cameraMatrix.convertTo(A, CV_64F);
+		if (!distCoeffs.empty())
+			distCoeffs = cv::Mat_<double>(distCoeffs);
+		else
+		{
+			distCoeffs.create(5, 1, CV_64F);
+			distCoeffs = 0.;
+		}
+
+		if (!newCameraMatrix.empty())
+			newCameraMatrix.convertTo(Ar, CV_64F);
+		else
+			A.copyTo(Ar);
+
+		double v0 = Ar(1, 2);
+		for (int y = 0; y < src.rows; y += stripe_size0)
+		{
+			int stripe_size = std::min(stripe_size0, src.rows - y);
+			Ar(1, 2) = v0 - y;
+			cv::Mat map1_part(stripe_size0, src.cols, CV_16SC2);
+			cv::Mat map2_part(stripe_size0, src.cols, CV_16UC1);
+
+			initUndistortRectifyMap(A, distCoeffs, I, Ar, cv::Size(src.cols, stripe_size),
+				map1_part.type(), map1_part, map2_part);
+			_map1.push_back(map1_part);
+			_map2.push_back(map2_part);
+		}
 	}
 }
 

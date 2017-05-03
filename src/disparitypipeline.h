@@ -4,7 +4,6 @@
 #include <string>
 #include <iostream>
 #include <fstream>
-#include <chrono>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -15,18 +14,23 @@
 
 class DisparityPipeline {
 public:
-	DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera);
+	DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera, int initNudge);
 	virtual ~DisparityPipeline();
 
 	void nextFrame();
 
 	cv::Mat* getDisparity();
+	cv::Mat* getDisparityNorm();
+	cv::Mat* getColorMat();
 
 	void writePointCloud(std::string fname);
 
 	void updateDisplay();
 
-	int getDepthAt(int r, int c);
+	short getDepthAt(int r, int c);
+	unsigned char getDepthAtNorm(int r, int c);
+
+	float getDistanceAt(int r, int c);
 
 	void setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata));
 
@@ -37,8 +41,6 @@ private:
 
 	cv::Mat translateImg(cv::Mat &img, int offsetx, int offsety);
 	int _nudgeAmount;
-
-	int _currentTime();
 
 	cv::Mat _disparity;
 	cv::Mat _disparity_norm;

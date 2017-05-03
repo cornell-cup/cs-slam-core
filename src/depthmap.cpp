@@ -27,10 +27,12 @@ DepthMap::DepthMap() {
 		speckleRange
 	);
 
+	_stereoBM = cv::StereoBM::create(128, 21);
 }
 
 DepthMap::~DepthMap() {}
 
 void DepthMap::getDisparity(cv::Mat& left_img, cv::Mat& right_img, cv::Mat& disp_dest) {
 	_stereoSGBM->compute(left_img, right_img, disp_dest);
+	//_stereoBM->compute(left_img, right_img, disp_dest);
 }
