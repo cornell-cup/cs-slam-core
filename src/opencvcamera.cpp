@@ -26,6 +26,11 @@ void OpenCVCamera::capture(cv::Mat& dest){
 		cv::Mat tempdest;
 		_capture >> tempdest;
 
+		if (tempdest.empty()) {
+			_capture.set(CV_CAP_PROP_POS_AVI_RATIO, 0);
+			_capture >> tempdest;
+		}
+
 		_setMaps(tempdest);
 
 		cv::Mat src = ((cv::InputArray)tempdest).getMat();

@@ -1,7 +1,7 @@
 #include "map2d.h"
 
 // half of the dimension of the visualiation mat
-const int Map2DSize = 250;
+const int Map2DSize = 300;
 
 Map2D::Map2D() {
   cv::namedWindow("2D Map");
@@ -68,7 +68,7 @@ void Map2D::_addToMap(Point3D p, int w, int h, int cent_x, int cent_y) {
   // make sure in bounds
   if(r >= 0 && r < _mapDims*2 && c >= 0 && c < _mapDims*2)
     // increment the value by the y weight / z*10 to give point's further away less weight
-    _tempMap.at<float>(r,c) = _tempMap.at<float>(r,c) + (_getYWeight(y)/(-z*10));
+    _tempMap.at<float>(r,c) = _tempMap.at<float>(r,c) + (_getYWeight(y)/(-z*10.f));
   else
     std::cout << "Error: OOB" << std::endl;
 }

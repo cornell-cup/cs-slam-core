@@ -14,7 +14,7 @@ const std::string DisparityPipeline::_plyHeaderPt2 = "property float x\n"
 
 const int leftCuttof = 90;
 
-DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera): _camera(leftCamera, rightCamera) {
+DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera, int initNudge): _camera(leftCamera, rightCamera) {
 
 	// intialize the depth map pipeline step
 	_dpMap = DepthMap();
@@ -27,6 +27,7 @@ DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rig
 	cv::namedWindow("left");
 	cv::namedWindow("right");
 	cv::namedWindow("disparity");
+	_nudgeAmount = initNudge;
 }
 
 void DisparityPipeline::nextFrame() {
@@ -48,10 +49,10 @@ void DisparityPipeline::nextFrame() {
 	// TODO see if this only needs to be done once, not a major issue though
 	cv::cvtColor(_left, leftG, cv::COLOR_BGR2GRAY);
 	cv::cvtColor(_right, rightG, cv::COLOR_BGR2GRAY);
-
+	
 	// calculate the disprity map
 	_dpMap.getDisparity(leftG, rightG, _disparity);
-
+	
 	cv::normalize(_disparity, _disparity_norm, 0, 255, cv::NORM_MINMAX, CV_8U);
 }
 
@@ -59,12 +60,14 @@ cv::Mat* DisparityPipeline::getDisparity() {
 	return &_disparity;
 }
 
+// returns depth in centimeters
 float DisparityPipeline::getDistanceAt(int r, int c) {
 	int value = getDepthAt(r, c);
 	if (value < 400 || value > 1400) {
 		return -1;
 	}
-	return 307.0991 + value*-0.1584;
+	// inverse relationship * scalar
+	return (1.f / value)*170000.f;
 }
 
 short DisparityPipeline::getDepthAt(int r, int c) {

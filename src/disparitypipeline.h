@@ -14,7 +14,7 @@
 
 class DisparityPipeline {
 public:
-	DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera);
+	DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera, int initNudge);
 	virtual ~DisparityPipeline();
 
 	void nextFrame();

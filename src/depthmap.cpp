@@ -27,7 +27,7 @@ DepthMap::DepthMap() {
 		speckleRange
 	);
 
-	//_stereoBM = cv::StereoBM::create(128, 21);
+	_stereoBM = cv::StereoBM::create(128, 21);
 }
 
 DepthMap::~DepthMap() {}

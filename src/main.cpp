@@ -29,7 +29,7 @@ int main() {
 	rightCamera.configure(640, 480, 30);
 	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
-	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera);
+	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, -2);
 
 	MouseHandler::initialize(&pipeline);
 
@@ -48,11 +48,11 @@ int main() {
 	while (!quit){
 		loopTime.split();
 		pipeline.nextFrame();
-
+ 
 		pipeline.updateDisplay();
-
+		
 		meshGenerator.generateMesh(pipeline.getDisparity());
-
+		
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
 		map2d.displayMap();
 
