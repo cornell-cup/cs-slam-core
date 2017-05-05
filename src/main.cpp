@@ -11,6 +11,7 @@
 int main() {
 	std::cout << "starting program" << std::endl;
 
+	// initialize the cameras to be used (either from files or physical cameras)
 	#ifdef _USE_FILES
 	OpenCVCamera leftCamera = OpenCVCamera("resources/right.mp4");
 	#else
@@ -29,30 +30,41 @@ int main() {
 	rightCamera.configure(640, 480, 30);
 	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
-	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, -2);
+	// initialize the disparity pipeline with the cameras and the intial nudge amount
+	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, 0);
 
+	// setup the mousehandler for OpenCV image mouse events
 	MouseHandler::initialize(&pipeline);
 
+	// initalize the mesh generator object
 	MeshGenerator meshGenerator = MeshGenerator();
 
+	// profiler, TODO: remove
 	Profiler loopTime;
 	loopTime.start();
 
 	// set to true to quit the loop
 	int quit = 0;
 
+	// set to 1 to save a mesh once
 	int savedMesh = 0;
 
+	// initialize the overhead map object
 	Map2D map2d;
 
 	while (!quit){
 		loopTime.split();
+
+		// process the next frame from the camera in the disparity pipeline
 		pipeline.nextFrame();
  
+		// display the camera frames and the normalized disparity map
 		pipeline.updateDisplay();
 		
+		// generate meshes from the disparity map
 		meshGenerator.generateMesh(pipeline.getDisparity());
 		
+		// update the overhead map and display the map
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
 		map2d.displayMap();
 

@@ -2,6 +2,7 @@
 
 MouseHandler* MouseHandler::_instance;
 
+// singleton for the handler
 MouseHandler* MouseHandler::initialize(DisparityPipeline* pipeline) {
   if(!_instance) {
     _instance = new MouseHandler(pipeline);
@@ -11,6 +12,7 @@ MouseHandler* MouseHandler::initialize(DisparityPipeline* pipeline) {
 
 MouseHandler::~MouseHandler(){}
 
+// set the callback with this singleton object's static method
 MouseHandler::MouseHandler(DisparityPipeline* pipeline) {
   _pipe = pipeline;
   _pipe->setDisparityMouseCallback(_mouseEventCallback);

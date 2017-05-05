@@ -12,6 +12,7 @@ const std::string DisparityPipeline::_plyHeaderPt2 = "property float x\n"
 "property uchar blue\n"
 "end_header\n";
 
+// disparity map does not produce values left of 90 pixels
 const int leftCuttof = 90;
 
 DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rightCamera, int initNudge): _camera(leftCamera, rightCamera) {
@@ -34,6 +35,7 @@ void DisparityPipeline::nextFrame() {
 	// get the images
 	_camera.getImage(_left, _right);
 
+	// nudge the image up or down
 	if (_nudgeAmount != 0)
 		translateImg(_left, 0, _nudgeAmount);
 
@@ -53,6 +55,7 @@ void DisparityPipeline::nextFrame() {
 	// calculate the disprity map
 	_dpMap.getDisparity(leftG, rightG, _disparity);
 	
+	// normalize the disparity map for display
 	cv::normalize(_disparity, _disparity_norm, 0, 255, cv::NORM_MINMAX, CV_8U);
 }
 
@@ -78,12 +81,12 @@ cv::Mat* DisparityPipeline::getDisparityNorm() {
 	return &_disparity_norm;
 }
 
+// get the matrix that has the RGB value associated with each pixel
 cv::Mat* DisparityPipeline::getColorMat() {
 	return &_left;
 }
 
 unsigned char DisparityPipeline::getDepthAtNorm(int r, int c) {
-	std::cout << _disparity_norm.type() << std::endl;
 	return _disparity_norm.at<unsigned char>(r, c);
 }
 
@@ -97,7 +100,7 @@ void DisparityPipeline::writePointCloud(std::string fname) {
 	int h = _disparity.size().height;
 	float f = 0.8*w;
 
-
+	// repojection matrix
 	float data[4][4] = { { 1, 0, 0, -0.5f*w },
 	{ 0,-1, 0,  0.5f*h },
 	{ 0, 0, 0,     -f },

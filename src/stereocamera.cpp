@@ -4,6 +4,7 @@ StereoCamera::StereoCamera(OpenCVCamera& left, OpenCVCamera& right): _cameraLeft
 
 StereoCamera::~StereoCamera() {}
 
+// capture images from both camera's an put the results in the corresponding matricies
 std::chrono::time_point<std::chrono::system_clock> StereoCamera::getImage(cv::Mat& left, cv::Mat& right){
 
 	_cameraLeft.capture(left);

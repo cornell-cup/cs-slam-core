@@ -17,11 +17,13 @@ Map2D::Map2D() {
 
   // initialize the y stops and weights
   _yStops.push_back(-1.f);
-  _yWeights.push_back(1.f);
   _yStops.push_back(0.3f);
+
+  _yWeights.push_back(1.f);
   _yWeights.push_back(1.f);
   _yWeights.push_back(1.f);
 
+  // low pass filter parameter
   _alpha = 0.1f;
 }
 
@@ -47,6 +49,7 @@ void Map2D::updateMap(std::vector<Mesh>& meshes, int img_width, int img_height) 
   }
 }
 
+// plot a square on the visualizer with the specified radius (s) and grayscale intensity (v)
 void Map2D::_plotPoint(int x, int y, int s, float v) {
   for(int i = -s; i <= s; i++) {
     for(int j = -s; j <= s; j++) {
@@ -73,6 +76,7 @@ void Map2D::_addToMap(Point3D p, int w, int h, int cent_x, int cent_y) {
     std::cout << "Error: OOB" << std::endl;
 }
 
+// return the weight of the pixel based on it's y value
 float Map2D::_getYWeight(float y) {
   if (y < _yStops[0])
     return _yWeights[0];
