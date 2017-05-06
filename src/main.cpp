@@ -5,9 +5,16 @@
 #include "mousehandler.h"
 #include "map2d.h"
 
+#include <thread>
+#include <mutex>
+#include <chrono>
+
 #define _USE_FILES
 
-int main() {
+cv::Mat* disp_ptr;
+std::mutex disp_ptr_lock;
+
+void vision_loop() {
 	// initialize the cameras to be used (either from files or physical cameras)
 	#ifdef _USE_FILES
 	OpenCVCamera leftCamera = OpenCVCamera("resources/right.mp4");
@@ -29,6 +36,7 @@ int main() {
 
 	// initialize the disparity pipeline with the cameras and the intial nudge amount
 	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, 0);
+	disp_ptr = pipeline.getDisparity();
 
 	// setup the mousehandler for OpenCV image mouse events
 	MouseHandler::initialize(&pipeline);
@@ -46,8 +54,15 @@ int main() {
 	Map2D map2d;
 
 	while (!quit){
+		std::cout << "much vision" << std::endl;
+		// mutex for disp map
+		std::lock_guard<std::mutex>* lock = new std::lock_guard<std::mutex>(disp_ptr_lock);
+
 		// process the next frame from the camera in the disparity pipeline
 		pipeline.nextFrame();
+
+		// release the lock
+		delete lock;
  
 		// display the camera frames and the normalized disparity map
 		pipeline.updateDisplay();
@@ -78,5 +93,24 @@ int main() {
 			savedMesh = 0;
 		}
 	}
+}
+
+void server_loop() {
+	std::chrono::seconds sec(1);
+	while(1){
+		std::cout << "Looping" << std::endl;
+		std::this_thread::sleep_for(sec);
+	}
+}
+
+int main() {
+	// cv::namedWindow("left");
+	std::thread vision(vision_loop);
+	std::thread server(server_loop);
+	
+	vision.join();
+	server.join();
+	// vision_loop();
+
 	return 0;
 }

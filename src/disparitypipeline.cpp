@@ -25,7 +25,7 @@ DisparityPipeline::DisparityPipeline(OpenCVCamera& leftCamera, OpenCVCamera& rig
 	_disparity_norm = cv::Mat::zeros(_camera.getHeight(), _camera.getWidth(), CV_8U);
 
 	// setup windows
-	cv::namedWindow("left");
+	// cv::namedWindow("left");
 	cv::namedWindow("right");
 	cv::namedWindow("disparity");
 	_nudgeAmount = initNudge;
