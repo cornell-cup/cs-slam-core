@@ -4,7 +4,7 @@
 #include "meshgenerator.h"
 #include "mousehandler.h"
 #include "map2d.h"
-
+#include "NamedPipeServer.h"
 #include <thread>
 #include <mutex>
 #include <chrono>
@@ -13,6 +13,7 @@
 
 cv::Mat* disp_ptr;
 std::mutex disp_ptr_lock;
+NamedPipeServer* server;
 
 void vision_loop() {
 	// initialize the cameras to be used (either from files or physical cameras)
@@ -37,7 +38,7 @@ void vision_loop() {
 	// initialize the disparity pipeline with the cameras and the intial nudge amount
 	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, 0);
 	disp_ptr = pipeline.getDisparity();
-
+	server->start();
 	// setup the mousehandler for OpenCV image mouse events
 	MouseHandler::initialize(&pipeline);
 
@@ -95,22 +96,13 @@ void vision_loop() {
 	}
 }
 
-void server_loop() {
-	std::chrono::seconds sec(1);
-	while(1){
-		std::cout << "Looping" << std::endl;
-		std::this_thread::sleep_for(sec);
-	}
-}
-
 int main() {
 	// cv::namedWindow("left");
-	std::thread vision(vision_loop);
-	std::thread server(server_loop);
-	
-	vision.join();
-	server.join();
-	// vision_loop();
+
+	server = NamedPipeServer::create("\\\\.\\pipe\\slam");
+	vision_loop();
+	delete server;
+
 
 	return 0;
 }
