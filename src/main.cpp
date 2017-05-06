@@ -39,10 +39,6 @@ int main() {
 	// initalize the mesh generator object
 	MeshGenerator meshGenerator = MeshGenerator();
 
-	// profiler, TODO: remove
-	Profiler loopTime;
-	loopTime.start();
-
 	// set to true to quit the loop
 	int quit = 0;
 
@@ -53,8 +49,6 @@ int main() {
 	Map2D map2d;
 
 	while (!quit){
-		loopTime.split();
-
 		// process the next frame from the camera in the disparity pipeline
 		pipeline.nextFrame();
  
@@ -77,9 +71,9 @@ int main() {
 			//pipeline.writePointCloud("points.ply");
 			savedMesh = 1;
 		}
-		else if (key == 115)
+		else if (key == 115)	// w
 			pipeline.nudge(1);
-		else if (key == 119)
+		else if (key == 119)	// s
 			pipeline.nudge(-1);
 
 		else if (savedMesh == 1) {

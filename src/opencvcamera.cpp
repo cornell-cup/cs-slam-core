@@ -64,7 +64,7 @@ void OpenCVCamera::capture(cv::Mat& dest){
 // initliaze the caibration matricies, copied from OpenCV code
 void OpenCVCamera::_setMaps(cv::Mat& _src) {
 	if (_map1.empty() || _map2.empty()) {
-		std::cout << "recalculate" << std::endl;
+		// std::cout << "recalculate calibration maps" << std::endl;
 
 		cv::Mat src = ((cv::InputArray )_src).getMat(), cameraMatrix = ((cv::InputArray)_cameraMatrix).getMat();
 		cv::Mat distCoeffs = ((cv::InputArray)_distanceCoeff).getMat();
