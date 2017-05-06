@@ -3,14 +3,11 @@
 #include "disparitypipeline.h"
 #include "meshgenerator.h"
 #include "mousehandler.h"
-#include "profiler.h"
 #include "map2d.h"
 
 #define _USE_FILES
 
 int main() {
-	std::cout << "starting program" << std::endl;
-
 	// initialize the cameras to be used (either from files or physical cameras)
 	#ifdef _USE_FILES
 	OpenCVCamera leftCamera = OpenCVCamera("resources/right.mp4");
