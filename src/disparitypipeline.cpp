@@ -153,3 +153,11 @@ cv::Mat DisparityPipeline::translateImg(cv::Mat &img, int offsetx, int offsety) 
 	cv::warpAffine(img, img, trans_mat, img.size());
 	return trans_mat;
 }
+
+unsigned int DisparityPipeline::getWidth() {
+	return _camera.getWidth();
+}
+
+unsigned int DisparityPipeline::getHeight() {
+	return _camera.getHeight();
+}

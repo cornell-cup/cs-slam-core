@@ -11,6 +11,7 @@
 
 //#define _USE_FILES
 #define INIT_NUDGE -3
+#define VERBOSE
 
 cv::Mat* disp_ptr;
 std::mutex disp_ptr_lock;
@@ -64,7 +65,9 @@ void vision_loop() {
 
 	while (!quit){
 		curTime = getCurentTime();
-		std::cout << ((curTime - prevTime)/1000000.f) << std::endl;
+		#ifdef VERBOSE
+			std::cout << ((curTime - prevTime) / 1000000.f) << std::endl;
+		#endif
 		prevTime = curTime;
 
 		// mutex for disp map

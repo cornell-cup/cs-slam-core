@@ -18,6 +18,9 @@ Map2D::Map2D() {
   _map = cv::Mat::zeros(_mapDims*2,_mapDims*2, CV_32F);
   _visualMat = cv::Mat::zeros(Map2DSize*2,Map2DSize*2, CV_32F);
 
+  // y ~= [-0.6,0.6]
+  // maybe add +-0.05
+
   // initialize the y stops and weights
   _yStops.push_back(-1.f);
   _yStops.push_back(0.3f);

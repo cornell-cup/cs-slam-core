@@ -35,6 +35,9 @@ public:
 	void setDisparityMouseCallback(void (*cbFunc)(int event, int x, int y, int flags, void* userdata));
 
 	void nudge(int amount);
+
+	unsigned int getWidth();
+	unsigned int getHeight();
 private:
 	StereoCamera _camera;
 	DepthMap _dpMap;
