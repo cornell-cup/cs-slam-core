@@ -8,8 +8,8 @@ OpenCVCamera::~OpenCVCamera(){}
 
 // load the calibration matricies from the specified files files
 void OpenCVCamera::loadCalibration(std::string cam_mat, std::string dist_mat) {
-	_cameraMatrix = _readMatFromTxt(cam_mat, 3, 3);
-	_distanceCoeff = _readMatFromTxt(dist_mat, 1, 5);
+	//_cameraMatrix = _readMatFromTxt(cam_mat, 3, 3);
+	//_distanceCoeff = _readMatFromTxt(dist_mat, 1, 5);
 
 	std::vector<cv::Mat> _map1;
 	std::vector<cv::Mat> _map2;

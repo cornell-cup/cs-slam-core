@@ -36,6 +36,7 @@ private:
   std::vector<float> _yWeights;
 
   float _alpha;
+  float _meshInverseScalar;
 };
 
 #endif

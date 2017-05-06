@@ -12,6 +12,9 @@ Map2D::Map2D() {
   // scale for the visualization mat
   _scaler = Map2DSize/_mapDims;
 
+  // increase by mesh resolution/count to inversely scale the added belief per pixel
+  _meshInverseScalar = 15.f;
+
   _map = cv::Mat::zeros(_mapDims*2,_mapDims*2, CV_32F);
   _visualMat = cv::Mat::zeros(Map2DSize*2,Map2DSize*2, CV_32F);
 
@@ -71,7 +74,7 @@ void Map2D::_addToMap(Point3D p, int w, int h, int cent_x, int cent_y) {
   // make sure in bounds
   if(r >= 0 && r < _mapDims*2 && c >= 0 && c < _mapDims*2)
     // increment the value by the y weight / z*10 to give point's further away less weight
-    _tempMap.at<float>(r,c) = _tempMap.at<float>(r,c) + (_getYWeight(y)/(-z*10.f));
+    _tempMap.at<float>(r,c) = _tempMap.at<float>(r,c) + (_getYWeight(y)/(-z*_meshInverseScalar));
   else
     std::cout << "Error: OOB" << std::endl;
 }
