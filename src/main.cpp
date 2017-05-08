@@ -4,7 +4,7 @@
 #include "meshgenerator.h"
 #include "mousehandler.h"
 #include "map2d.h"
-#include "NamedPipeServer.h"
+#include "pipes/NamedPipeServer.h"
 #include <thread>
 #include <mutex>
 #include <chrono>
