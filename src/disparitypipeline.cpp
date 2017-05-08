@@ -78,7 +78,7 @@ float DisparityPipeline::getDistanceAt(int r, int c) {
 		return -1;
 	}
 	// inverse relationship * scalar
-	return (1.f / value)*170000.f;
+	return (1.f / value)*108600.f;
 }
 
 short DisparityPipeline::getDepthAt(int r, int c) {
@@ -160,4 +160,12 @@ cv::Mat DisparityPipeline::translateImg(cv::Mat &img, int offsetx, int offsety) 
 	cv::Mat trans_mat = (cv::Mat_<double>(2, 3) << 1, 0, offsetx, 0, 1, offsety);
 	cv::warpAffine(img, img, trans_mat, img.size());
 	return trans_mat;
+}
+
+unsigned int DisparityPipeline::getWidth() {
+	return _camera.getWidth();
+}
+
+unsigned int DisparityPipeline::getHeight() {
+	return _camera.getHeight();
 }

@@ -9,7 +9,7 @@ MeshGenerator::MeshGenerator() {
   _resolution = 4;
 
 	// the threshold between two neighboring pixel's depth gradient to put them on the same mesh
-  // usually ~ 2*resolution
+  // usually ~ 4*resolution
   _diffThreshold = 16;
 
 	// the minimum number of faces a mesh must have

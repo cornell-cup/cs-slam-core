@@ -9,7 +9,9 @@
 #include <mutex>
 #include <chrono>
 
-#define _USE_FILES
+//#define _USE_FILES
+#define INIT_NUDGE -2
+//#define VERBOSE
 
 cv::Mat* disp_ptr;
 std::mutex disp_ptr_lock;
@@ -22,6 +24,10 @@ void compressImgMatrix(cv::Mat& img, vector<uchar>& buffer) {
 	compression_params.push_back(9);
 
 	cv::imencode("png", img, buffer, compression_params);
+}
+
+int getCurentTime() {
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }
 
 void vision_loop() {
@@ -45,9 +51,9 @@ void vision_loop() {
 	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
 	// initialize the disparity pipeline with the cameras and the intial nudge amount
-	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, 0);
+	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, INIT_NUDGE);
 	disp_ptr = pipeline.getDisparity();
-	server->start();
+	//server->start();
 	// setup the mousehandler for OpenCV image mouse events
 	MouseHandler::initialize(&pipeline);
 
@@ -63,8 +69,16 @@ void vision_loop() {
 	// initialize the overhead map object
 	Map2D map2d;
 
+	int curTime = getCurentTime();
+	int prevTime = curTime;
+
 	while (!quit){
-		std::cout << "much vision" << std::endl;
+		curTime = getCurentTime();
+		#ifdef VERBOSE
+			std::cout << ((curTime - prevTime) / 1000000.f) << std::endl;
+		#endif
+		prevTime = curTime;
+
 		// mutex for disp map
 		std::lock_guard<std::mutex>* lock = new std::lock_guard<std::mutex>(disp_ptr_lock);
 
@@ -93,9 +107,9 @@ void vision_loop() {
 			//pipeline.writePointCloud("points.ply");
 			savedMesh = 1;
 		}
-		else if (key == 115)	// w
+		else if (key == 115)	// s
 			pipeline.nudge(1);
-		else if (key == 119)	// s
+		else if (key == 119)	// w
 			pipeline.nudge(-1);
 
 		else if (savedMesh == 1) {
