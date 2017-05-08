@@ -15,6 +15,15 @@ cv::Mat* disp_ptr;
 std::mutex disp_ptr_lock;
 NamedPipeServer* server;
 
+// compression helper function
+void compressImgMatrix(cv::Mat& img, vector<uchar>& buffer) {
+	vector<int> compression_params;
+	compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	compression_params.push_back(9);
+
+	cv::imencode("png", img, buffer, compression_params);
+}
+
 void vision_loop() {
 	// initialize the cameras to be used (either from files or physical cameras)
 	#ifdef _USE_FILES

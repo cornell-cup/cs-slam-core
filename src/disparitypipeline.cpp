@@ -59,6 +59,14 @@ void DisparityPipeline::nextFrame() {
 	cv::normalize(_disparity, _disparity_norm, 0, 255, cv::NORM_MINMAX, CV_8U);
 }
 
+cv::Mat* DisparityPipeline::getLeftImg() {
+	return &_left;
+}
+
+cv::Mat* DisparityPipeline::getRightImg() {
+	return &_right;
+}
+
 cv::Mat* DisparityPipeline::getDisparity() {
 	return &_disparity;
 }

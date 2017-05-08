@@ -23,6 +23,9 @@ public:
 	cv::Mat* getDisparityNorm();
 	cv::Mat* getColorMat();
 
+	cv::Mat* getLeftImg();
+	cv::Mat* getRightImg();
+
 	void writePointCloud(std::string fname);
 
 	void updateDisplay();
