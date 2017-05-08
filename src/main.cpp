@@ -8,6 +8,8 @@
 #include <thread>
 #include <mutex>
 #include <chrono>
+#include <vector>
+#include "r2/R2Protocol.hpp"
 
 //#define _USE_FILES
 #define INIT_NUDGE -2
@@ -16,6 +18,30 @@
 cv::Mat* disp_ptr;
 std::mutex disp_ptr_lock;
 NamedPipeServer* server;
+
+unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_size, size_t request_size)
+{
+	R2Protocol::Packet packet = {};
+	std::vector<unsigned char> request_vector;
+	request_vector.insert(request_vector.end(), request, request + request_size);
+	R2Protocol::decode(request_vector, packet);
+
+	std::string packet_id = std::string(packet.id);
+
+	if (packet_id.compare("disparity_map") == 0)
+	{
+		//return disparity map
+	}
+	else if (packet_id.compare("features") == 0)
+	{
+		//return features
+	}
+	else if (packet_id.compare("overhead") == 0)
+	{
+		//return overhead
+	}
+
+}
 
 int getCurentTime() {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
@@ -44,7 +70,7 @@ void vision_loop() {
 	// initialize the disparity pipeline with the cameras and the intial nudge amount
 	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, INIT_NUDGE);
 	disp_ptr = pipeline.getDisparity();
-	//server->start();
+	server->start();
 	// setup the mousehandler for OpenCV image mouse events
 	MouseHandler::initialize(&pipeline);
 
@@ -114,6 +140,7 @@ int main() {
 	// cv::namedWindow("left");
 
 	server = NamedPipeServer::create("\\\\.\\pipe\\slam");
+	server->setOnRequestCallback(onClientPipeRequest);
 	vision_loop();
 	delete server;
 
