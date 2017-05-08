@@ -10,8 +10,8 @@
 #include <chrono>
 
 //#define _USE_FILES
-#define INIT_NUDGE -3
-#define VERBOSE
+#define INIT_NUDGE -2
+//#define VERBOSE
 
 cv::Mat* disp_ptr;
 std::mutex disp_ptr_lock;

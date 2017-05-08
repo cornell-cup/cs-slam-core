@@ -22,12 +22,12 @@ Map2D::Map2D() {
   // maybe add +-0.05
 
   // initialize the y stops and weights
-  _yStops.push_back(-1.f);
-  _yStops.push_back(0.3f);
+  _yStops.push_back(-0.4f); // ~ floor height
+  _yStops.push_back(0.25f);	// ~ top of r2
 
+  _yWeights.push_back(0.1f);
   _yWeights.push_back(1.f);
-  _yWeights.push_back(1.f);
-  _yWeights.push_back(1.f);
+  _yWeights.push_back(0.3f);
 
   // low pass filter parameter
   _alpha = 0.1f;

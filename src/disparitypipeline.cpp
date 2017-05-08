@@ -70,7 +70,7 @@ float DisparityPipeline::getDistanceAt(int r, int c) {
 		return -1;
 	}
 	// inverse relationship * scalar
-	return (1.f / value)*170000.f;
+	return (1.f / value)*108600.f;
 }
 
 short DisparityPipeline::getDepthAt(int r, int c) {
