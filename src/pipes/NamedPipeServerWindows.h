@@ -10,13 +10,15 @@
 #include <string>
 #include <cstring>
 #include <thread>
+#include <intrin.h>
 
 typedef struct
 {
 	OVERLAPPED oOverlap;
 	HANDLE hPipeInst;
 	unsigned char* r2_data;
-	unsigned int r2_data_size;
+	uint32_t r2_data_size;
+	unsigned char test[4];
 	DWORD cbRead;
 	unsigned char chReply[BUFSIZE];
 	DWORD cbToWrite;

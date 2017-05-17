@@ -11,6 +11,7 @@
 #include <vector>
 #include "pipes/NamedPipeServer.h"
 #include "r2/R2Protocol.hpp"
+#include <mutex>
 
 // #define _USE_FILES 
 #define INIT_NUDGE -2
@@ -27,33 +28,58 @@ void compressImgMatrix(cv::Mat& img, vector<uchar>& buffer) {
 	cv::imencode("png", img, buffer, compression_params);
 }
 
-unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_size, size_t request_size)
+void getResponsePacket(std::string request_id, R2Protocol::Packet& response_packet, std::string destination)
 {
-	R2Protocol::Packet packet = {};
-	std::vector<unsigned char> request_vector;
-	request_vector.insert(request_vector.end(), request, request + request_size);
-	R2Protocol::decode(request_vector, packet);
+	response_packet.destination = destination;
+	response_packet.source = "VISION";
+	response_packet.id = "disparity_map";
 
-	std::string packet_id = std::string(packet.id);
-
-	if (packet_id.compare("disparity_map") == 0)
+	if (request_id.compare("disparity_map") == 0)
 	{
-		//return disparity map
+		uchar* disparity_data = disp_ptr->data;
+		size_t disparty_size = disp_ptr->step[0] * disp_ptr->rows;
+
+		response_packet.data.insert(response_packet.data.begin(), disparity_data, disparity_data + disparty_size);
 	}
-	else if (packet_id.compare("features") == 0)
+	else if (request_id.compare("features") == 0)
 	{
 		//return features
 	}
-	else if (packet_id.compare("overhead") == 0)
+	else if (request_id.compare("overhead") == 0)
 	{
 		//return overhead
 	}
 	else if (packet_id.compare("image") == 0)
 	{
 		//return left image
-		server->send()
+		server->send();
+}
+
+unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_size, size_t request_size)
+{
+	R2Protocol::Packet request_packet = {};
+	std::vector<unsigned char> request_vector;
+	request_vector.insert(request_vector.end(), request, request + request_size);
+	R2Protocol::decode(request_vector, request_packet);
+
+	std::string packet_id = std::string(request_packet.id);
+	R2Protocol::Packet response_packet;
+	getResponsePacket(packet_id, response_packet, request_packet.source);
+
+	std::vector<uint8_t> response_bytes_vector;
+	R2Protocol::encode(response_packet, response_bytes_vector);
+
+	uint8_t* response_bytes = new uint8_t[response_bytes_vector.size()];
+
+
+	*reply_size = response_bytes_vector.size();
+
+	for (int i = 0; i < *reply_size; i++)
+	{
+		response_bytes[i] = response_bytes_vector.at(i);
 	}
 
+	return response_bytes;
 }
 
 int getCurentTime() {
