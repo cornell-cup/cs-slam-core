@@ -56,6 +56,7 @@ void getResponsePacket(std::string request_id, R2Protocol::Packet& response_pack
 	{
 		//return left image
 		server->send();
+	}
 }
 
 unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_size, size_t request_size)
