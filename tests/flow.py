@@ -31,46 +31,78 @@ feature_params = dict( maxCorners = 1000,
                        minDistance = 8,
                        blockSize = 19 )
 
-def checkedTrace(img0, img1, p0, back_threshold = 1.0):
-    p1, st, err = cv2.calcOpticalFlowPyrLK(img0, img1, p0, None, **lk_params)
-    p0r, st, err = cv2.calcOpticalFlowPyrLK(img1, img0, p1, None, **lk_params)
-    d = abs(p0-p0r).reshape(-1, 2).max(-1)
+def checkedTrace(img0, img1, points_prev, back_threshold = 1.0):
+    # calculate optical flow from prev frame to cur frame
+    points_cur, st, err = cv2.calcOpticalFlowPyrLK(img0, img1, points_prev, None, **lk_params)
+    # calculate optical flow backwards
+    points_prev_recalc, st, err = cv2.calcOpticalFlowPyrLK(img1, img0, points_cur, None, **lk_params)
+    # calculate discripency between prev and recalculated prev points
+    d = abs(points_prev-points_prev_recalc).reshape(-1, 2).max(-1)
+    # set a status vector where 1 means the point is good and 0 means the point is bad
     status = d < back_threshold
-    return p1, status
+    # return the new points and the status vector
+    return points_cur, status
 
 green = (0, 255, 0)
 red = (0, 0, 255)
 
-p0 = None
+# initial feature vector
+points_t0 = None
+# current feature vector, with entries corresponding to initial feature vector 
+points_cur = None
+
+# set to true to find and remove outliers
 use_ransac = True
 
+# current ticks
 ticks = 0
+# the number of ticks between feature updates
 ticks_to_update = 10
 
 while True:
+    # get the current frame
     ret, frame = cap.read()
+    # convert the frame to grayscale
     frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # vis is the base layer for the visualization
     vis = frame.copy()
-    if p0 is not None:
-        p2, trace_status = checkedTrace(gray1, frame_gray, p1)
+    if points_t0 is not None:
+        # calculate the new points from optical flow and the current validity of each point
+        p2, trace_status = checkedTrace(prev_frame_gray, frame_gray, points_cur)
 
-        p1 = p2[trace_status].copy()
-        p0 = p0[trace_status].copy()
-        gray1 = frame_gray
+        # update the points
+        points_cur = p2[trace_status].copy()
+        points_t0 = points_t0[trace_status].copy()
 
-        if len(p0) < 4:
-            p0 = None
+        # update the prev gray frame
+        prev_frame_gray = frame_gray
+
+        # if we don't have enough points from the first tick, just continue
+        if len(points_t0) < 4:
+            points_t0 = None
             continue
-        H, status = cv2.findHomography(p0, p1, (0, cv2.RANSAC)[use_ransac], 10.0)
-        h, w = frame.shape[:2]
-        overlay = cv2.warpPerspective(frame0, H, (w, h))
+
+        # calculate the 2D planar homography matrix and the status of each of the points
+        H, status = cv2.findHomography(points_t0, points_cur, (0, cv2.RANSAC)[use_ransac], 10.0)
+
+        # caluclate height and width
+        height, width = frame.shape[:2]
+
+        # the overlay image warped to new perspective, should match up
+        overlay = cv2.warpPerspective(frame0, H, (width, height))
+
+        # add the overlay to the current frame at 50% opacity
         vis = cv2.addWeighted(vis, 0.5, overlay, 0.5, 0.0)
 
-        for (x0, y0), (x1, y1), good in zip(p0[:,0], p1[:,0], status[:,0]):
+        # plot the points and lines
+        for (x0, y0), (x1, y1), good in zip(points_t0[:,0], points_cur[:,0], status[:,0]):
             if good:
                 cv2.line(vis, (x0, y0), (x1, y1), (0, 128, 0))
             cv2.circle(vis, (x1, y1), 2, (red, green)[good], -1)
+
     else:
+        # if not currently tracking features, just find good features
         p = cv2.goodFeaturesToTrack(frame_gray, **feature_params)
         if p is not None:
             for x, y in p[:,0]:
@@ -82,12 +114,14 @@ while True:
         ticks+=1
     else:
         ticks = 0
+        # save the original frame, for cool overlay effect
         frame0 = frame.copy()
-        p0 = cv2.goodFeaturesToTrack(frame_gray, **feature_params)
-        if p0 is not None:
-            p1 = p0
-            gray0 = frame_gray
-            gray1 = frame_gray
+
+        # set the points to be tracked for the next ticks_to_update ticks
+        points_t0 = cv2.goodFeaturesToTrack(frame_gray, **feature_params)
+        if points_t0 is not None:
+            points_cur = points_t0
+            prev_frame_gray = frame_gray
 
     ch = cv2.waitKey(1)
     if ch == 27:
