@@ -1,25 +1,32 @@
 #include <string>
 
-#include "disparitypipeline.h"
+#include "stereocamera.h"
 #include "meshgenerator.h"
-#include "mousehandler.h"
 #include "map2d.h"
-#include "pipes/NamedPipeServer.h"
+#include "meshlabio.h"
+#include "disparitynamedwindows.h"
 #include <thread>
 #include <mutex>
 #include <chrono>
 #include <vector>
+#include "pipes/NamedPipeServer.h"
 #include "r2/R2Protocol.hpp"
 #include <mutex>
 
-//#define _USE_FILES
+// #define _USE_FILES 
 #define INIT_NUDGE -2
 //#define VERBOSE
 
-cv::Mat* disp_ptr;
-std::mutex disp_ptr_lock;
+std::mutex disp_mat_lock;
 NamedPipeServer* server;
 
+void compressImgMatrix(cv::Mat& img, vector<uchar>& buffer) {
+	vector<int> compression_params;
+	compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	compression_params.push_back(9);
+
+	cv::imencode("png", img, buffer, compression_params);
+}
 
 void getResponsePacket(std::string request_id, R2Protocol::Packet& response_packet, std::string destination)
 {
@@ -42,6 +49,10 @@ void getResponsePacket(std::string request_id, R2Protocol::Packet& response_pack
 	{
 		//return overhead
 	}
+	else if (packet_id.compare("image") == 0)
+	{
+		//return left image
+		server->send();
 }
 
 unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_size, size_t request_size)
@@ -78,29 +89,25 @@ int getCurentTime() {
 void vision_loop() {
 	// initialize the cameras to be used (either from files or physical cameras)
 	#ifdef _USE_FILES
-	OpenCVCamera leftCamera = OpenCVCamera("resources/right.mp4");
+	OpenCVCamera leftCamera = OpenCVCamera("resources/right.mp4", 640, 480, 30);
 	#else
-	OpenCVCamera leftCamera = OpenCVCamera(1);
+	OpenCVCamera leftCamera = OpenCVCamera(1, 640, 480, 30);
 	#endif
 
-	leftCamera.configure(640, 480, 30);
 	leftCamera.loadCalibration("calibration_mats/cam_mats_left", "calibration_mats/dist_coefs_left");
 
 	#ifdef _USE_FILES
-	OpenCVCamera rightCamera = OpenCVCamera("resources/left.mp4");
+	OpenCVCamera rightCamera = OpenCVCamera("resources/left.mp4", 640, 480, 30);
 	#else
-	OpenCVCamera rightCamera = OpenCVCamera(0);
+	OpenCVCamera rightCamera = OpenCVCamera(0, 640, 480, 30);
 	#endif
 
-	rightCamera.configure(640, 480, 30);
 	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
-	// initialize the disparity pipeline with the cameras and the intial nudge amount
-	DisparityPipeline pipeline = DisparityPipeline(leftCamera, rightCamera, INIT_NUDGE);
-	disp_ptr = pipeline.getDisparity();
+	StereoCamera camera = StereoCamera(leftCamera, rightCamera);
+	DisparityNamedWindows::initialize(&camera);
+
 	server->start();
-	// setup the mousehandler for OpenCV image mouse events
-	MouseHandler::initialize(&pipeline);
 
 	// initalize the mesh generator object
 	MeshGenerator meshGenerator = MeshGenerator();
@@ -124,20 +131,20 @@ void vision_loop() {
 		#endif
 		prevTime = curTime;
 
-		// mutex for disp map
-		std::lock_guard<std::mutex>* lock = new std::lock_guard<std::mutex>(disp_ptr_lock);
+		// mutex for disp mat
+		disp_mat_lock.lock();
 
 		// process the next frame from the camera in the disparity pipeline
-		pipeline.nextFrame();
+		camera.nextFrame();
 
-		// release the lock
-		delete lock;
+		// unlock
+		disp_mat_lock.unlock();
  
 		// display the camera frames and the normalized disparity map
-		pipeline.updateDisplay();
+		DisparityNamedWindows::updateDisplay();
 		
 		// generate meshes from the disparity map
-		meshGenerator.generateMesh(pipeline.getDisparity());
+		meshGenerator.generateMesh(camera.getDisparity());
 		
 		// update the overhead map and display the map
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
@@ -148,24 +155,24 @@ void vision_loop() {
 		if (key == 27) // esc
 			quit = 1;
 		else if (key == 112) {	// p
-			meshGenerator.writeToFile("mesh.ply", pipeline.getColorMat());
+			meshlabio::writeMeshes("mesh.ply", leftCamera.getFrame(), meshGenerator.getMeshes(), 0);
 			//pipeline.writePointCloud("points.ply");
 			savedMesh = 1;
 		}
-		else if (key == 115)	// s
-			pipeline.nudge(1);
-		else if (key == 119)	// w
-			pipeline.nudge(-1);
-
+		else if (key == 115) {	// s
+			leftCamera.nudge(1);
+		}
+		else if (key == 119) {	// w
+			leftCamera.nudge(-1);
+		}
 		else if (savedMesh == 1) {
-			meshGenerator.writeToFile("mesh2.ply", pipeline.getColorMat());
+			meshlabio::writeMeshes("mesh2.ply", leftCamera.getFrame(), meshGenerator.getMeshes(), 1);
 			savedMesh = 0;
 		}
 	}
 }
 
 int main() {
-	// cv::namedWindow("left");
 
 	server = NamedPipeServer::create("\\\\.\\pipe\\slam");
 	server->setOnRequestCallback(onClientPipeRequest);

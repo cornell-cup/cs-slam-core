@@ -66,9 +66,9 @@ void Map2D::_plotPoint(int x, int y, int s, float v) {
 
 void Map2D::_addToMap(Point3D p, int w, int h, int cent_x, int cent_y) {
   // reproject to 3d
-  float x = (p.x-0.5f*w)/p.z;
-	float y = (-p.y+0.5f*h)/p.z;
-	float z = (-0.8*w)/p.z;
+  float x = reproject_utils::reprojectX(p.x, p.z, w);
+	float y = reproject_utils::reprojectY(p.y, p.z, h);
+	float z = reproject_utils::reprojectZ(p.z, 0.8f, w);
 
   // calculate the approximate row and column of the point
   int r = cent_y+round(z*_multiplier);
