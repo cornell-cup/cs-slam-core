@@ -5,6 +5,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include "meshgenerator.h"
+#include "reprojectutils.h"
 
 #include <math.h>
 

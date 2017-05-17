@@ -32,13 +32,10 @@ public:
   virtual ~MeshGenerator();
 
   void generateMesh(cv::Mat* input);
-  void writeToFile(std::string fname, cv::Mat* color);
 
   std::vector<Mesh>* getMeshes();
 
 private:
-  void _reprojectTo3D(int x, int y, int disp, int h, int w, float* dest);
-
   int _minValue;
   int _resolution;
   int _diffThreshold;

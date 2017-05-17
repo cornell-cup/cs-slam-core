@@ -1,48 +1,39 @@
 #include "opencvcamera.h"
 
-OpenCVCamera::OpenCVCamera(unsigned int id) : _id(id) , _capture(_id){};
+OpenCVCamera::OpenCVCamera(unsigned int id, unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate) : _capture(id){
+	_configure(frame_width, frame_height, frame_rate);
+};
 
-OpenCVCamera::OpenCVCamera(std::string filename) : _capture(filename) {};
+OpenCVCamera::OpenCVCamera(std::string filename, unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate) : _capture(filename) {
+	_configure(frame_width, frame_height, frame_rate);
+};
 
 OpenCVCamera::~OpenCVCamera(){}
 
-// load the calibration matricies from the specified files files
-void OpenCVCamera::loadCalibration(std::string cam_mat, std::string dist_mat) {
-	//_cameraMatrix = _readMatFromTxt(cam_mat, 3, 3);
-	//_distanceCoeff = _readMatFromTxt(dist_mat, 1, 5);
-
-	std::vector<cv::Mat> _map1;
-	std::vector<cv::Mat> _map2;
-}
-
-// add configuration setup for width, height, and frame rate
-void OpenCVCamera::configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate)
-{
-	_capture.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
-	_capture.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
-	_capture.set(CV_CAP_PROP_FPS, frame_rate);
-}
-
 // capture an image and undistort it
-void OpenCVCamera::capture(cv::Mat& dest){
+void OpenCVCamera::nextFrame(){
 	if(!(_cameraMatrix.empty() || _distanceCoeff.empty())) {
 		cv::Mat tempdest;
 		// capture the image
 		_capture >> tempdest;
 
-		// potentially restart the video stream
+		// potentially restart the video stream and retry
 		if (tempdest.empty()) {
 			_capture.set(CV_CAP_PROP_POS_AVI_RATIO, 0);
 			_capture >> tempdest;
 		}
+
+		// return if nothing
+		if(tempdest.empty())
+			return;
 
 		// potentially set the undistort maps
 		_setMaps(tempdest);
 
 		// setup source and destination matricies for the image
 		cv::Mat src = ((cv::InputArray)tempdest).getMat();
-		dest.create(src.size(), src.type());
-		cv::Mat dst = ((cv::InputArray)dest).getMat();
+		_frame.create(src.size(), src.type());
+		cv::Mat dst = ((cv::InputArray)_frame).getMat();
 
 		// undistort calculations
 		int stripe_size0 = std::min(std::max(1, (1 << 12) / std::max(src.cols, 1)), src.rows);
@@ -57,8 +48,34 @@ void OpenCVCamera::capture(cv::Mat& dest){
 		}
 	}
 	else {
-		_capture >> dest;
+		_capture >> _frame;
 	}
+
+	// nudge the frame up or down
+	if (_nudgeAmount != 0)
+		_translateImg(_frame, 0, _nudgeAmount);
+}
+
+cv::Mat* OpenCVCamera::getFrame() {
+	return &_frame;
+}
+
+void OpenCVCamera::nudge(int amount) {
+	_nudgeAmount += amount;
+}
+
+// load the calibration matricies from the specified files files
+void OpenCVCamera::loadCalibration(std::string cam_mat, std::string dist_mat) {
+	_cameraMatrix = _readMatFromTxt(cam_mat, 3, 3);
+	_distanceCoeff = _readMatFromTxt(dist_mat, 1, 5);
+}
+
+// add configuration setup for width, height, and frame rate
+void OpenCVCamera::_configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate)
+{
+	_capture.set(CV_CAP_PROP_FRAME_WIDTH, frame_width);
+	_capture.set(CV_CAP_PROP_FRAME_HEIGHT, frame_height);
+	_capture.set(CV_CAP_PROP_FPS, frame_rate);
 }
 
 // initliaze the caibration matricies, copied from OpenCV code
@@ -125,6 +142,11 @@ unsigned int OpenCVCamera::getAttribute(unsigned int id) const
 	return _capture.get(id);
 }
 
+cv::Mat OpenCVCamera::_translateImg(cv::Mat &img, int offsetx, int offsety) {
+	cv::Mat trans_mat = (cv::Mat_<double>(2, 3) << 1, 0, offsetx, 0, 1, offsety);
+	cv::warpAffine(img, img, trans_mat, img.size());
+	return trans_mat;
+}
 
 cv::Mat OpenCVCamera::_readMatFromTxt(std::string filename, int rows, int cols) {
 	float m;
