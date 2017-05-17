@@ -11,15 +11,18 @@
 #include <vector>
 #include "pipes/NamedPipeServer.h"
 #include "r2/R2Protocol.hpp"
-#include <mutex>
 
 // #define _USE_FILES 
 #define INIT_NUDGE -2
 //#define VERBOSE
 
+// mutex for the stereo matrix
 std::mutex disp_mat_lock;
+
+// named pipe server
 NamedPipeServer* server;
 
+// compress mat to bytestream
 void compressImgMatrix(cv::Mat& img, vector<uchar>& buffer) {
 	vector<int> compression_params;
 	compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
@@ -82,6 +85,7 @@ unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_
 	return response_bytes;
 }
 
+// get the current time
 int getCurentTime() {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
 }

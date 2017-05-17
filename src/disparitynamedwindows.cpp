@@ -3,15 +3,10 @@
 DisparityNamedWindows* DisparityNamedWindows::_instance;
 
 // singleton for the handler
-DisparityNamedWindows* DisparityNamedWindows::initialize(StereoCamera* camera) {
+void DisparityNamedWindows::initialize(StereoCamera* camera) {
   if(!_instance) {
     _instance = new DisparityNamedWindows(camera);
   }
-  return _instance;
-}
-
-DisparityNamedWindows* DisparityNamedWindows::getInstance() {
-  return _instance;
 }
 
 DisparityNamedWindows::~DisparityNamedWindows(){}
@@ -27,6 +22,7 @@ DisparityNamedWindows::DisparityNamedWindows(StereoCamera* camera) {
   cv::setMouseCallback("disparity", _mouseEventCallback, NULL);
 }
 
+// mouse callback to print helpful info
 void DisparityNamedWindows::_mouseEventCallback(int event, int x, int y, int flags, void* userdata) {
      if  (event == cv::EVENT_LBUTTONDOWN ){
       int disp = _instance->_camera->getDispAt(y, x);

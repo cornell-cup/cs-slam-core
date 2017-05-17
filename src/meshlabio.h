@@ -24,8 +24,10 @@ namespace meshlabio {
 
   const int leftCuttof = 90;
 
+  // write the camera's disparity map to a .ply point cloud file
   void writePointCloud(std::string fname, StereoCamera& camera);
 
+  // write the mesh generator's meshes to a .ply mesh file
   void writeMeshes(std::string fname, cv::Mat* color, std::vector<Mesh>* meshes, int type);
 }
 

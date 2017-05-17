@@ -25,6 +25,7 @@ public:
 	cv::Mat* getDisparity();
 	cv::Mat* getDisparityNorm();
 
+	// get specific values in the disparity matrix
 	short getDispAt(int r, int c);
 	unsigned char getDispAtNorm(int r, int c);
 

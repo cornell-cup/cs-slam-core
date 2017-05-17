@@ -10,20 +10,25 @@
 class DisparityNamedWindows {
 
 public:
-  static DisparityNamedWindows* initialize(StereoCamera* camera);
+  // singleton intiailizer
+  static void initialize(StereoCamera* camera);
 
-  static DisparityNamedWindows* getInstance();
-
+  // update the named windows
   static void updateDisplay();
 
+  // destructor
   virtual ~DisparityNamedWindows();
 
 private:
+  // class constructor
   DisparityNamedWindows(StereoCamera* camera);
+  // singleton instance
   static DisparityNamedWindows* _instance;
 
+  // named windows callback function
   static void _mouseEventCallback(int event, int x, int y, int flags, void* userdata);
 
+  // camera pointer to get window data
   StereoCamera* _camera;
 };
 
