@@ -20,6 +20,8 @@ DisparityNamedWindows::DisparityNamedWindows(StereoCamera* camera) {
 	cv::namedWindow("disparity");
 
   cv::setMouseCallback("disparity", _mouseEventCallback, NULL);
+
+  cv::namedWindow("2D Map");
 }
 
 // mouse callback to print helpful info
@@ -40,7 +42,7 @@ void DisparityNamedWindows::_mouseEventCallback(int event, int x, int y, int fla
      //}
 }
 
-void DisparityNamedWindows::updateDisplay(FeatureTracker& featureTracker) {
+void DisparityNamedWindows::updateDisplay(FeatureTracker& featureTracker, Map2D& overhead) {
   cv::Mat vis = _instance->_camera->getLeftCamera()->getFrame()->clone();
   std::vector<cv::Point2f>* initFeatures = featureTracker.getInitFeatures();
   std::vector<cv::Point2f>* curFeatures = featureTracker.getCurFeatures();
@@ -54,4 +56,6 @@ void DisparityNamedWindows::updateDisplay(FeatureTracker& featureTracker) {
   cv::imshow("left", vis);
   cv::imshow("right", *(_instance->_camera->getRightCamera()->getFrame()));
   cv::imshow("disparity", *(_instance->_camera->getDisparityNorm()));
+
+  cv::imshow("2D Map", *(overhead.getVisual()));
 }

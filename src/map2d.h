@@ -16,7 +16,7 @@ public:
 
   void updateMap(std::vector<Mesh>& meshes, int img_width, int img_height);
 
-  void displayMap();
+  cv::Mat* getVisual();
 
 private:
   // radius of block map

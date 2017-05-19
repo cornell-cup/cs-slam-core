@@ -6,6 +6,7 @@
 #include "meshlabio.h"
 #include "disparitynamedwindows.h"
 #include "featuretracker.h"
+#include "transformation.h"
 
 #include <thread>
 #include <mutex>
@@ -131,6 +132,9 @@ void vision_loop() {
 	// initialize the feature tracker
 	FeatureTracker featureTracker;
 
+	// initialize the transformation calculator
+	Transformation transform;
+
 	// set to true to quit the loop
 	int quit = 0;
 
@@ -164,12 +168,15 @@ void vision_loop() {
 		
 		// update the overhead map and display the map
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
-		map2d.displayMap();
 
 		featureTracker.trackFeatures(*(camera.getLeftCamera()->getFrame()));
 
+		transform.computeTransform(camera, meshGenerator, featureTracker);
+
+		featureTracker.tick();
+
 		// display the camera frames and the normalized disparity map
-		DisparityNamedWindows::updateDisplay(featureTracker);
+		DisparityNamedWindows::updateDisplay(featureTracker, map2d);
 
 		// check if the esc key has been pressed to exit the loop
 		int key = cv::waitKey(1);

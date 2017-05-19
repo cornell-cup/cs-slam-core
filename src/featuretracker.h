@@ -14,7 +14,9 @@ public:
   virtual ~FeatureTracker();
 
   void trackFeatures(cv::Mat& img);
-  void filterFeatures(std::vector<cv::Point2f>& filter);
+
+  void tick();
+  int getCurTick();
 
   std::vector<cv::Point2f>* getCurFeatures();
   std::vector<cv::Point2f>* getInitFeatures();
@@ -27,10 +29,10 @@ private:
 
   cv::Mat _transformation;
 
+  void _filterFeatures(std::vector<uchar>& filter);
+
   void _findFeatures(cv::Mat& inputImg, std::vector<cv::Point2f>& dest);
   void _calcOpticalFlow(cv::Mat& prevGray, cv::Mat& gray, std::vector<cv::Point2f>& prevPoints, std::vector<cv::Point2f>& dest, std::vector<uchar>& status);
-
-  // void filterVector(cv::Mat& mat, cv::Mat& filter);
 
   int _curTick;
   int _resetTickNum;

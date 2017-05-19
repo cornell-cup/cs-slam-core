@@ -24,78 +24,68 @@ void FeatureTracker::trackFeatures(cv::Mat& img) {
 
     // calculate optical flow from prev frame to cur frame
     _calcOpticalFlow(_prevGray, grayImg, _curFeatures, updatedFeatures, flowStatus);
+
     // calculate optical flow backwards
     std::vector<uchar> backFlowStatus;
     _calcOpticalFlow(grayImg, _prevGray, updatedFeatures, prevFeaturesRecalc, backFlowStatus);
 
-    // update the features
-    _curFeatures = updatedFeatures;
-
-    /*
     // calculate discripency between prev and recalculated prev points
-    cv::Mat diffMulti;
+    std::vector<cv::Point2f> diffMulti;
     cv::absdiff(_curFeatures, prevFeaturesRecalc, diffMulti);
     // split the two channels and calculate the max diff for each point
-    cv::Mat diffSplit[2];
-    cv::split(diffMulti, diffSplit);
-    cv::Mat diff;
-    cv::max(diffSplit[0], diffSplit[1], diff);
-
-    // std::cout << diffMulti << std::endl;
+    std::vector<float> diff;
+    for(int i = 0; i < diffMulti.size(); i++) {
+      diff.push_back(diffMulti[i].x > diffMulti[i].y ? diffMulti[i].x : diffMulti[i].y);
+    }
     
     // set a status vector where 255 means the point is good and 0 means the point is bad
-    cv::Mat diffStatus;
+    std::vector<uchar> diffStatus;
     cv::compare(diff, cv::Scalar(_backThreshold), diffStatus, cv::CMP_LT);
-    */
 
-    // std::cout << updatedFeatures.size() << "," << updatedFeatures.at<cv::Vec<float, 2>>(0,1) << "," << status.type() << std::endl;
+    // update the features
+    _curFeatures = updatedFeatures;
+    std::vector<uchar> status;
+    cv::bitwise_and(flowStatus, diffStatus, status);
+    _filterFeatures(status);
 
-    // update the points
-    // _curFeatures = updatedFeatures[status].copy()
-    // _initFeatures = _initFeatures[status].copy()
-    // filterFeatures(status/255);
-
-    // update the prev gray frame
-    _prevGray = grayImg;
+    // std::cout << updatedFeatures.size() << " , " << _curFeatures.size() << std::endl;
   }
 
+  // update the prev gray frame
+  _prevGray = grayImg;
+
+}
+
+void FeatureTracker::tick() {
   if(_curTick < _resetTickNum) {
     _curTick++;
   } else {
     _curTick = 0;
 
     // set the points to be tracked for the next resetTickNum ticks
-    _findFeatures(grayImg, _initFeatures);
+    _findFeatures(_prevGray, _initFeatures);
     _curFeatures = _initFeatures;
-    _prevGray = grayImg;
   }
-
-
 }
 
-// filter where 0 means exclude and 1 means include
-void FeatureTracker::filterFeatures(std::vector<cv::Point2f>& filter) {
-  /*
-  int oldSize = _curFeatures.rows;
+int FeatureTracker::getCurTick() {
+  return _curTick;
+}
 
-  int newSize = (int) cv::sum(filter)[0];
-  std::cout << newSize << std::endl;
+// filter where 0 means exclude and >=1 means include
+void FeatureTracker::_filterFeatures(std::vector<uchar>& filter) {
+  std::vector<cv::Point2f> filteredInitFeatures;
+  std::vector<cv::Point2f> filteredCurFeatures;
 
-  cv::Mat filteredInitFeatures(1, newSize, CV_32FC2);
-  cv::Mat filteredCurFeatures(1, newSize, CV_32FC2);
-
-  int curIdx = 0;
-  for(int i = 0; i < oldSize; i++) {
-    if(filter.at<char>(i,0) == 1) {
-      filteredInitFeatures.at<cv::Vec<float, 2>>(curIdx,0) = _initFeatures.at<cv::Vec<float, 2>>(i,0);
-      filteredCurFeatures.at<cv::Vec<float, 2>>(curIdx,0) = _curFeatures.at<cv::Vec<float, 2>>(i,0);
-      curIdx++;
+  for(int i = 0; i < _curFeatures.size(); i++) {
+    if(filter.at(i) >= 1) {
+      filteredInitFeatures.push_back(_initFeatures.at(i));
+      filteredCurFeatures.push_back(_curFeatures.at(i));
     }
   }
 
   _initFeatures = filteredInitFeatures;
   _curFeatures = filteredCurFeatures;
-  */
 }
 
 std::vector<cv::Point2f>* FeatureTracker::getCurFeatures() {
@@ -119,7 +109,7 @@ void FeatureTracker::_findFeatures(cv::Mat& inputImg, std::vector<cv::Point2f>& 
    */
   cv::goodFeaturesToTrack(inputImg, dest, 1000, 0.01, 8, cv::noArray(), 19);
 
-  // TODO figure out if necessary
+  // TODO figure out if necessary to refine features
   // cv::Size subPixWinSize(10,10);
   // cv::TermCriteria termcrit(cv::TermCriteria::COUNT | cv::TermCriteria::EPS, 20, 0.03);
   /*

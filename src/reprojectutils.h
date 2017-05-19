@@ -17,17 +17,17 @@ namespace reproject_utils {
   float disparityToCm(int dispValue);
 
   // inline x reprojection
-  inline float reprojectX(int x, int z, unsigned int w) {
+  inline float reprojectX(float x, float z, unsigned int w) {
     return (x-0.5f*w)/ z;
   }
 
   // inline y reprojection
-  inline float reprojectY(int y, int z, unsigned int h) {
+  inline float reprojectY(float y, float z, unsigned int h) {
     return (-y+0.5f*h)/ z;
   }
 
   // inline z reprojection
-  inline float reprojectZ(int z, float f, unsigned int w) {
+  inline float reprojectZ(float z, float f, unsigned int w) {
     return (-f*w)/ z;
   }
 }
