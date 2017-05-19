@@ -24,7 +24,7 @@ std::chrono::time_point<std::chrono::system_clock> StereoCamera::nextFrame(){
 	cv::cvtColor(*(_cameraRight.getFrame()), rightG, cv::COLOR_BGR2GRAY);
 	
 	// calculate the disprity map
-	_dpMap.getDisparity(leftG, rightG, _disparity);
+	_dpMap.getDisparity(leftG, rightG, _disparity, 0);
 	
 	// normalize the disparity map for display
 	cv::normalize(_disparity, _disparityNorm, 0, 255, cv::NORM_MINMAX, CV_8U);

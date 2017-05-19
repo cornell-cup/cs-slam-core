@@ -3,6 +3,7 @@
 
 #include "stereocamera.h"
 #include "reprojectutils.h"
+#include "featuretracker.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -14,7 +15,7 @@ public:
   static void initialize(StereoCamera* camera);
 
   // update the named windows
-  static void updateDisplay();
+  static void updateDisplay(FeatureTracker& featureTracker);
 
   // destructor
   virtual ~DisparityNamedWindows();

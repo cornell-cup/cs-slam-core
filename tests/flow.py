@@ -86,6 +86,8 @@ while True:
         # calculate the 2D planar homography matrix and the status of each of the points
         H, status = cv2.findHomography(points_t0, points_cur, (0, cv2.RANSAC)[use_ransac], 10.0)
 
+        # print H
+
         # caluclate height and width
         height, width = frame.shape[:2]
 

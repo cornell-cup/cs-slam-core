@@ -5,20 +5,26 @@
 #include "map2d.h"
 #include "meshlabio.h"
 #include "disparitynamedwindows.h"
+#include "featuretracker.h"
+
 #include <thread>
 #include <mutex>
 #include <chrono>
 #include <vector>
+
+#ifdef SLAM_PRODUCTION
 #include "pipes/NamedPipeServer.h"
 #include "r2/R2Protocol.hpp"
+#endif
 
-// #define _USE_FILES 
+#define _USE_FILES 
 #define INIT_NUDGE -2
 //#define VERBOSE
 
 // mutex for the stereo matrix
 std::mutex disp_mat_lock;
 
+#ifdef SLAM_PRODUCTION
 // named pipe server
 NamedPipeServer* server;
 
@@ -86,6 +92,8 @@ unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_
 	return response_bytes;
 }
 
+#endif
+
 // get the current time
 int getCurentTime() {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
@@ -99,7 +107,8 @@ void vision_loop() {
 	OpenCVCamera leftCamera = OpenCVCamera(1, 640, 480, 30);
 	#endif
 
-	leftCamera.loadCalibration("calibration_mats/cam_mats_left", "calibration_mats/dist_coefs_left");
+	// leftCamera.loadCalibration("calibration_mats/cam_mats_left", "calibration_mats/dist_coefs_left");
+	leftCamera.nudge(INIT_NUDGE);
 
 	#ifdef _USE_FILES
 	OpenCVCamera rightCamera = OpenCVCamera("resources/left.mp4", 640, 480, 30);
@@ -107,15 +116,20 @@ void vision_loop() {
 	OpenCVCamera rightCamera = OpenCVCamera(0, 640, 480, 30);
 	#endif
 
-	rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
+	// rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
 	StereoCamera camera = StereoCamera(leftCamera, rightCamera);
 	DisparityNamedWindows::initialize(&camera);
 
+	#ifdef SLAM_PRODUCTION
 	server->start();
+	#endif
 
-	// initalize the mesh generator object
+	// initialize the mesh generator object
 	MeshGenerator meshGenerator = MeshGenerator();
+
+	// initialize the feature tracker
+	FeatureTracker featureTracker;
 
 	// set to true to quit the loop
 	int quit = 0;
@@ -144,9 +158,6 @@ void vision_loop() {
 
 		// unlock
 		disp_mat_lock.unlock();
- 
-		// display the camera frames and the normalized disparity map
-		DisparityNamedWindows::updateDisplay();
 		
 		// generate meshes from the disparity map
 		meshGenerator.generateMesh(camera.getDisparity());
@@ -154,6 +165,11 @@ void vision_loop() {
 		// update the overhead map and display the map
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
 		map2d.displayMap();
+
+		featureTracker.trackFeatures(*(camera.getLeftCamera()->getFrame()));
+
+		// display the camera frames and the normalized disparity map
+		DisparityNamedWindows::updateDisplay(featureTracker);
 
 		// check if the esc key has been pressed to exit the loop
 		int key = cv::waitKey(1);
@@ -179,10 +195,16 @@ void vision_loop() {
 
 int main() {
 
+	#ifdef SLAM_PRODUCTION
 	server = NamedPipeServer::create("\\\\.\\pipe\\slam");
 	server->setOnRequestCallback(onClientPipeRequest);
+	#endif
+
 	vision_loop();
+
+	#ifdef SLAM_PRODUCTION
 	delete server;
+	#endif
 
 
 	return 0;

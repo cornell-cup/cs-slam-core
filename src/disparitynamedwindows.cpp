@@ -33,15 +33,25 @@ void DisparityNamedWindows::_mouseEventCallback(int event, int x, int y, int fla
       float x_proj = reproject_utils::reprojectX(x, disp, w);
       float y_proj = reproject_utils::reprojectY(y, disp, h);
       float z_proj = reproject_utils::reprojectZ(disp, 0.8f, w);
-      std::cout << "Distance: " << distance << ", \t Disparity: " << disp << " \t at (" << x_proj << ", " << y_proj << "," << z_proj << ")" << std::endl;
+      std::cout << "Distance: " << distance << "cm, \t Disparity: " << disp << " \t at (" << x_proj << ", " << y_proj << "," << z_proj << ")" << std::endl;
      }
      //else if (event == cv::EVENT_MOUSEMOVE){
        //   std::cout << "Mouse move over the window - position (" << x << ", " << y << ")" << std::endl;
      //}
 }
 
-void DisparityNamedWindows::updateDisplay() {
-  cv::imshow("left", *(_instance->_camera->getLeftCamera()->getFrame()));
+void DisparityNamedWindows::updateDisplay(FeatureTracker& featureTracker) {
+  cv::Mat vis = _instance->_camera->getLeftCamera()->getFrame()->clone();
+  std::vector<cv::Point2f>* initFeatures = featureTracker.getInitFeatures();
+  std::vector<cv::Point2f>* curFeatures = featureTracker.getCurFeatures();
+  for(int i = 0; i < initFeatures->size(); i++) {
+    cv::Point2f curPoint = curFeatures->at(i);
+    cv::Point2f startPoint = initFeatures->at(i);
+    cv::line(vis, startPoint, curPoint, cv::Scalar(0, 128, 0));
+    cv::circle(vis, curPoint, 2, cv::Scalar(0,255,0), -1);
+  }
+
+  cv::imshow("left", vis);
   cv::imshow("right", *(_instance->_camera->getRightCamera()->getFrame()));
   cv::imshow("disparity", *(_instance->_camera->getDisparityNorm()));
 }
