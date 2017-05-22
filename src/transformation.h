@@ -20,6 +20,8 @@ public:
 
   void computeTransform(StereoCamera& camera, MeshGenerator& meshGenerator, FeatureTracker& featureTracker);
 
+  cv::Mat* getTransform();
+
 private:
   cv::Mat _transformationMatrix;
   cv::Mat _tempTransform;

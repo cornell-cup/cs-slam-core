@@ -8,7 +8,8 @@
 #include "featuretracker.h"
 #include "transformation.h"
 
-#include <thread>
+#include "server/server.h"
+
 #include <mutex>
 #include <chrono>
 #include <vector>
@@ -24,6 +25,8 @@
 
 // mutex for the stereo matrix
 std::mutex disp_mat_lock;
+
+Server* transformServer;
 
 #ifdef SLAM_PRODUCTION
 // named pipe server
@@ -134,6 +137,9 @@ void vision_loop() {
 
 	// initialize the transformation calculator
 	Transformation transform;
+
+	transformServer = new Server(&transform);
+	transformServer->runServerThread();
 
 	// set to true to quit the loop
 	int quit = 0;
