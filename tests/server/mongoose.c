@@ -1559,7 +1559,7 @@ static void terminate_headers(struct mg_connection *c) {
 
 void mg_send_data(struct mg_connection *c, const void *data, int data_len) {
   terminate_headers(c);
-  write_chunk((struct connection *) c, data, data_len);
+  write_chunk((struct connection *) c, (char *) data, data_len);
 }
 
 void mg_printf_data(struct mg_connection *c, const char *fmt, ...) {
@@ -2504,7 +2504,7 @@ static void handle_delete(struct connection *conn, const char *path) {
   } else if (S_ISDIR(st.st_mode)) {
     remove_directory(path);
     send_http_error(conn, 204, NULL);
-  } else if (!remove(path) == 0) {
+  } else if ((!remove(path)) == 0) {
     send_http_error(conn, 204, NULL);
   } else {
     send_http_error(conn, 423, NULL);
