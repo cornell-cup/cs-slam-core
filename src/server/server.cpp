@@ -43,7 +43,7 @@ int Server::_handler(struct mg_connection *conn) {
   char var1[500], var2[500];
 
   if (strcmp(conn->uri, "/get_matrix") == 0) {
-    std::cout << "POST: " << conn->uri << std::endl;
+    // std::cout << "POST: " << conn->uri << std::endl;
 
     // Send reply to the client, showing submitted form values.
     // POST data is in conn->content, data length is in conn->content_len
@@ -63,9 +63,6 @@ int Server::_handler(struct mg_connection *conn) {
         break;
       }
     }
-
-    std::cout << buffer << std::endl;
-    std::cout << *(_transform->getTransform()) << std::endl;
 
     mg_printf_data(conn, buffer);
   } else {
