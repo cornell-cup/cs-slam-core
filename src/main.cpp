@@ -19,7 +19,7 @@
 #include "r2/R2Protocol.hpp"
 #endif
 
-#define _USE_FILES 
+#define _USE_FILES
 #define INIT_NUDGE -2
 //#define VERBOSE
 
@@ -49,10 +49,14 @@ void getResponsePacket(std::string request_id, R2Protocol::Packet& response_pack
 
 	if (request_id.compare("disparity_map") == 0)
 	{
+		// mutex for disp map
+		disp_ptr_lock.lock();
+
 		uchar* disparity_data = disp_ptr->data;
 		size_t disparty_size = disp_ptr->step[0] * disp_ptr->rows;
 
 		response_packet.data.insert(response_packet.data.begin(), disparity_data, disparity_data + disparty_size);
+		disp_ptr_lock.lock();
 	}
 	else if (request_id.compare("features") == 0)
 	{
@@ -160,14 +164,16 @@ void vision_loop() {
 		#endif
 		prevTime = curTime;
 
-		// mutex for disp mat
-		disp_mat_lock.lock();
+		disp_ptr_lock.lock();
 
 		// process the next frame from the camera in the disparity pipeline
 		camera.nextFrame();
 
-		// unlock
-		disp_mat_lock.unlock();
+		// release the lock
+		disp_ptr_lock.unlock();
+ 
+		// display the camera frames and the normalized disparity map
+		pipeline.updateDisplay();
 		
 		// generate meshes from the disparity map
 		meshGenerator.generateMesh(camera.getDisparity());
