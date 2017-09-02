@@ -24,73 +24,8 @@ MeshGenerator::MeshGenerator() {
 
 MeshGenerator::~MeshGenerator() {}
 
-void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
-	std::cout << _meshes.size() << std::endl;
-
-	int numMeshes = _meshes.size();
-
-	// compute the total number of verticies and faces
-	int numVerts = 0;
-	int numFaces = 0;
-	// also compute the offset applied to the point indexes for each mesh
-	std::vector<int> vertOffsets;
-	for (int i = 0; i < numMeshes; i++) {
-		vertOffsets.push_back(numVerts);
-		numVerts += _meshes[i].points.size();
-		numFaces += _meshes[i].faces.size();
-	}
-
-	int h = color->size().height;
-	int w = color->size().width;
-
-	cv::Mat colors = color->reshape(1, w*h);
-
-	std::ofstream myfile;
-	myfile.open(fname);
-
-	// setup header
-	myfile << "ply\nformat ascii 1.0\nelement vertex " << numVerts << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nelement face " << numFaces << "\nproperty list uchar int vertex_index\nend_header" << std::endl;
-
-	float projectMat[3];
-
-	for (int r = 0; r < numMeshes; r++) {
-
-		int colorr = (char) (r*333);
-		int colorg = (char) (r*651);
-		int colorb = (char) (r*17);
-
-		for (int i = 0; i < _meshes[r].points.size(); i++) {
-			int x = _meshes[r].points[i].x;
-			int y = _meshes[r].points[i].y;
-			int z = _meshes[r].points[i].z;
-			int colIdx = y*w + x;
-			_reprojectTo3D(x, y, z, h, w, projectMat);
-
-			//myfile << x << " " << y << " " << z << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
-			//myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
-			myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colorr << " " << colorg << " " << colorb << " " << std::endl;
-		}
-	}
-
-	for (int r = 0; r < numMeshes; r++) {
-		int offset = vertOffsets[r];
-		for (int i = 0; i < _meshes[r].faces.size(); i++) {
-			myfile << "3 " << _meshes[r].faces[i].p1 + offset << " " << _meshes[r].faces[i].p2 + offset << " " << _meshes[r].faces[i].p3 + offset << " " << std::endl;
-		}
-	}
-
-	myfile.close();
-	std::cout << "generated meshes" << std::endl;
-}
-
 std::vector<Mesh>* MeshGenerator::getMeshes() {
   return &_meshes;
-}
-
-void MeshGenerator::_reprojectTo3D(int x, int y, int disp, int h, int w, float* dest) {
-	dest[0] = (x-0.5f*w)/ disp;
-	dest[1] = (-y+0.5f*h)/ disp;
-	dest[2] = (-0.8*w)/ disp;
 }
 
 void MeshGenerator::generateMesh(cv::Mat* input) {

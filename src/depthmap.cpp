@@ -43,7 +43,10 @@ DepthMap::DepthMap() {
 
 DepthMap::~DepthMap() {}
 
-void DepthMap::getDisparity(cv::Mat& left_img, cv::Mat& right_img, cv::Mat& disp_dest) {
-	_stereoSGBM->compute(left_img, right_img, disp_dest);
-	//_stereoBM->compute(left_img, right_img, disp_dest);
+void DepthMap::getDisparity(cv::Mat& left_img, cv::Mat& right_img, cv::Mat& disp_dest, int type) {
+	if(type == 0) {
+		_stereoSGBM->compute(left_img, right_img, disp_dest);
+	} else if (type == 1) {
+		_stereoBM->compute(left_img, right_img, disp_dest);
+	}
 }

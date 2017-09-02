@@ -12,7 +12,7 @@ class DepthMap {
     DepthMap();
     virtual ~DepthMap();
 
-    void getDisparity(cv::Mat& left_img, cv::Mat& right_img, cv::Mat& disp_dest);
+    void getDisparity(cv::Mat& left_img, cv::Mat& right_img, cv::Mat& disp_dest, int type);
 };
 
 #endif

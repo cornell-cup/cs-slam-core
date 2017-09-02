@@ -4,8 +4,6 @@
 const int Map2DSize = 300;
 
 Map2D::Map2D() {
-  cv::namedWindow("2D Map");
-
   // multiplier for -1 -> 1 projection to array rows/cols
   _multiplier = _mapDims*0.75f;
 
@@ -66,9 +64,9 @@ void Map2D::_plotPoint(int x, int y, int s, float v) {
 
 void Map2D::_addToMap(Point3D p, int w, int h, int cent_x, int cent_y) {
   // reproject to 3d
-  float x = (p.x-0.5f*w)/p.z;
-	float y = (-p.y+0.5f*h)/p.z;
-	float z = (-0.8*w)/p.z;
+  float x = reproject_utils::reprojectX(p.x, p.z, w);
+	float y = reproject_utils::reprojectY(p.y, p.z, h);
+	float z = reproject_utils::reprojectZ(p.z, 0.8f, w);
 
   // calculate the approximate row and column of the point
   int r = cent_y+round(z*_multiplier);
@@ -93,7 +91,7 @@ float Map2D::_getYWeight(float y) {
   return 0.0f;
 }
 
-void Map2D::displayMap() {
+cv::Mat* Map2D::getVisual() {
   for (int r = 1; r < _mapDims*2-1; r++) {
     for (int c = 1; c < _mapDims*2-1; c++) {
       // plot each point with the given intensity/200
@@ -103,6 +101,5 @@ void Map2D::displayMap() {
 
   // plot R2
   _plotPoint(Map2DSize, Map2DSize, 5, 1.0f);
-
-  cv::imshow("2D Map", _visualMat);
+  return &_visualMat;
 }
