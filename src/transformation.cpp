@@ -27,7 +27,7 @@ void Transformation::computeTransform(StereoCamera& camera, MeshGenerator& meshG
   }
 
   std::vector<cv::Point3f> initPoints;
-  // recalc init projections
+  // recalc init projections because size may have changed
   _projectFromPrev(_initDisparity, featureTracker.getInitFeatures(), initPoints, w, h);
 
   /*
@@ -77,25 +77,36 @@ void Transformation::computeTransform(StereoCamera& camera, MeshGenerator& meshG
 }
 
 void Transformation::_estimateRigidTransform3D(std::vector<cv::Point3f>& p1, std::vector<cv::Point3f>& p2, cv::Mat& dest) {
+  if (p1.size() != p2.size()) {
+    printf("Error, sizes dont match up: %lu != %lu", p1.size(), p2.size());
+  }
+
   cv::Point3f centroid1(0,0,0);
   cv::Point3f centroid2(0,0,0);
 
-  // compute mean of p1 and p2 into centroid1 and centroi2 respectively
-  for(int i = 0; i < p1.size(); i++) {
-    centroid1.x += p1[i].x;
-    centroid1.y += p1[i].y;
-    centroid1.z += p1[i].z;
-    centroid2.x += p2[i].x;
-    centroid2.y += p2[i].y;
-    centroid2.z += p2[i].z;
-  }
-  centroid1.x *= (1.f/p1.size());
-  centroid1.y *= (1.f/p1.size());
-  centroid1.z *= (1.f/p1.size());
-  centroid2.x *= (1.f/p1.size());
-  centroid2.y *= (1.f/p1.size());
-  centroid2.z *= (1.f/p1.size());
+  int numPoints = p1.size();
 
+  // compute mean of p1 and p2 into centroid1 and centroi2 respectively
+  for(int i = 0; i < numPoints; i++) {
+    centroid1 += p1[i];
+    centroid2 += p2[i];
+    // centroid1.x += p1[i].x;
+    // centroid1.y += p1[i].y;
+    // centroid1.z += p1[i].z;
+    // centroid2.x += p2[i].x;
+    // centroid2.y += p2[i].y;
+    // centroid2.z += p2[i].z;
+  }
+  centroid1 /= (double) numPoints;
+  centroid2 /= (double) numPoints;
+  // centroid1.x *= (1.f/p1.size());
+  // centroid1.y *= (1.f/p1.size());
+  // centroid1.z *= (1.f/p1.size());
+  // centroid2.x *= (1.f/p1.size());
+  // centroid2.y *= (1.f/p1.size());
+  // centroid2.z *= (1.f/p1.size());
+
+  // covariance matrix 
   cv::Mat cov = cv::Mat::zeros(3,3,CV_32F);
 
   for(int i = 0; i < p1.size(); i++) {
@@ -118,8 +129,10 @@ void Transformation::_estimateRigidTransform3D(std::vector<cv::Point3f>& p1, std
   cv::Mat V, Ut;
   cv::transpose(Vt, V);
   cv::transpose(U, Ut);
+  // TODO check if V*Ut or U*Vt
   cv::Mat R = V*Ut;
 
+  // check if reflection case
   if(cv::determinant(R) < 0) {
     std::cout << "Reflection detected" << std::endl;
     V.at<float>(0,2) *= -1;
@@ -128,11 +141,17 @@ void Transformation::_estimateRigidTransform3D(std::vector<cv::Point3f>& p1, std
     R = V*Ut;
   }
 
+  // t = -R*cent_1 + cent2
   cv::Point3f t = centroid2;
   t.x -= R.at<float>(0,0)*centroid1.x + R.at<float>(0,1)*centroid1.y + R.at<float>(0,2)*centroid1.z;
   t.y -= R.at<float>(1,0)*centroid1.x + R.at<float>(1,1)*centroid1.y + R.at<float>(1,2)*centroid1.z;
   t.z -= R.at<float>(2,0)*centroid1.x + R.at<float>(2,1)*centroid1.y + R.at<float>(2,2)*centroid1.z;
 
+  // combine rotation and translation into 1 4x4 matrix
+  // | r r r tx |
+  // | r r r ty |
+  // | r r r tz |
+  // | 0 0 0 1  |
   dest.at<float>(0,0) = R.at<float>(0,0);
   dest.at<float>(0,1) = R.at<float>(0,1);
   dest.at<float>(0,2) = R.at<float>(0,2);
@@ -146,6 +165,11 @@ void Transformation::_estimateRigidTransform3D(std::vector<cv::Point3f>& p1, std
   dest.at<float>(0,3) = t.x;
   dest.at<float>(1,3) = t.y;
   dest.at<float>(2,3) = t.z;
+
+  dest.at<float>(3,0) = 0.f;
+  dest.at<float>(3,1) = 0.f;
+  dest.at<float>(3,2) = 0.f;
+  dest.at<float>(3,3) = 1.f;
 }
 
 void Transformation::_normRotations(cv::Mat& mat4) {
@@ -168,20 +192,24 @@ cv::Mat* Transformation::getTransform() {
   return &_transformationMatrix;
 }
 
-void Transformation::_projectFromPrev(cv::Mat disp, std::vector<cv::Point2f>* points2D, std::vector<cv::Point3f>& dest, int w, int h) {
+void Transformation::_projectFromPrev(cv::Mat& disp, std::vector<cv::Point2f>* points2D, std::vector<cv::Point3f>& dest, int w, int h) {
   dest.clear();
+
+  int dispWidth = disp.cols;
+  int dispHeight = disp.rows;
 
   for(int i = 0; i < points2D->size(); i++) {
     float x = points2D->at(i).x;
     float y = points2D->at(i).y;
-    if(x < 0)
-      x = 0;
-    if(y < 0)
-      y = 0;
+    if(x < 0) x = 0;
+    if(x >= dispWidth) x = dispWidth - 1;
+    if(y < 0) y = 0;
+    if (x >= dispHeight) y = dispHeight - 1;
 
     // TODO interpolate z value from 8 surrounding pixels via weighted sum on normalized squared distance
     int z = disp.at<short>((int) round(y), (int) round(x));
     // TODO test if z is valid and create filter
+    // TODO filter features based on mesh generator results
     dest.push_back(cv::Point3f(
       reproject_utils::reprojectX(x, z, w),
       reproject_utils::reprojectY(y, z, h),

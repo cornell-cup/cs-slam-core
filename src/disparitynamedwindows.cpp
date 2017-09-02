@@ -31,7 +31,7 @@ void DisparityNamedWindows::_mouseEventCallback(int event, int x, int y, int fla
       int distance = reproject_utils::disparityToCm(disp);
       int w = _instance->_camera->getWidth();
       int h = _instance->_camera->getHeight();
-      
+
       float x_proj = reproject_utils::reprojectX(x, disp, w);
       float y_proj = reproject_utils::reprojectY(y, disp, h);
       float z_proj = reproject_utils::reprojectZ(disp, 0.8f, w);
@@ -44,18 +44,23 @@ void DisparityNamedWindows::_mouseEventCallback(int event, int x, int y, int fla
 
 void DisparityNamedWindows::updateDisplay(FeatureTracker& featureTracker, Map2D& overhead) {
   cv::Mat vis = _instance->_camera->getLeftCamera()->getFrame()->clone();
+  cv::Mat visDisp = _instance->_camera->getDisparityNorm()->clone();
   std::vector<cv::Point2f>* initFeatures = featureTracker.getInitFeatures();
   std::vector<cv::Point2f>* curFeatures = featureTracker.getCurFeatures();
+
+  // draw tracking points on the left camera image
   for(int i = 0; i < initFeatures->size(); i++) {
     cv::Point2f curPoint = curFeatures->at(i);
     cv::Point2f startPoint = initFeatures->at(i);
     cv::line(vis, startPoint, curPoint, cv::Scalar(0, 128, 0));
+    // cv::line(visDisp, startPoint, curPoint, cv::Scalar(0, 128, 0));
     cv::circle(vis, curPoint, 2, cv::Scalar(0,255,0), -1);
+    // cv::circle(visDisp, curPoint, 2, cv::Scalar(0,255,0), -1);
   }
 
   cv::imshow("left", vis);
   cv::imshow("right", *(_instance->_camera->getRightCamera()->getFrame()));
-  cv::imshow("disparity", *(_instance->_camera->getDisparityNorm()));
+  cv::imshow("disparity", visDisp);
 
   cv::imshow("2D Map", *(overhead.getVisual()));
 }
