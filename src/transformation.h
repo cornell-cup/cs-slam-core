@@ -26,7 +26,7 @@ private:
   cv::Mat _transformationMatrix;
   cv::Mat _tempTransform;
   
-  void _projectFromPrev(cv::Mat disp, std::vector<cv::Point2f>* points2D, std::vector<cv::Point3f>& dest, int w, int h);
+  void _projectFromPrev(cv::Mat& disp, std::vector<cv::Point2f>* points2D, std::vector<cv::Point3f>& dest, int w, int h);
 
   void _normRotations(cv::Mat& mat4);
 
