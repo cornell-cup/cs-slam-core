@@ -50,13 +50,13 @@ void getResponsePacket(std::string request_id, R2Protocol::Packet& response_pack
 	if (request_id.compare("disparity_map") == 0)
 	{
 		// mutex for disp map
-		disp_ptr_lock.lock();
+		disp_mat_lock.lock();
 
 		uchar* disparity_data = disp_ptr->data;
 		size_t disparty_size = disp_ptr->step[0] * disp_ptr->rows;
 
 		response_packet.data.insert(response_packet.data.begin(), disparity_data, disparity_data + disparty_size);
-		disp_ptr_lock.lock();
+		disp_mat_lock.lock();
 	}
 	else if (request_id.compare("features") == 0)
 	{
@@ -164,16 +164,18 @@ void vision_loop() {
 		#endif
 		prevTime = curTime;
 
-		disp_ptr_lock.lock();
+		disp_mat_lock.lock();
 
 		// process the next frame from the camera in the disparity pipeline
 		camera.nextFrame();
 
 		// release the lock
-		disp_ptr_lock.unlock();
+		disp_mat_lock.unlock();
  
+		#ifdef SLAM_PRODUCTION
 		// display the camera frames and the normalized disparity map
 		pipeline.updateDisplay();
+		#endif
 		
 		// generate meshes from the disparity map
 		meshGenerator.generateMesh(camera.getDisparity());
