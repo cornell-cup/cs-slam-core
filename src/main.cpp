@@ -20,7 +20,7 @@
 #endif
 
 #define _USE_FILES
-#define INIT_NUDGE -2
+#define INIT_NUDGE -40
 //#define VERBOSE
 
 // mutex for the stereo matrix
@@ -110,7 +110,7 @@ int getCurentTime() {
 void vision_loop() {
 	// initialize the cameras to be used (either from files or physical cameras)
 	#ifdef _USE_FILES
-	OpenCVCamera leftCamera = OpenCVCamera("resources/right.mp4", 640, 480, 30);
+	OpenCVCamera leftCamera = OpenCVCamera("resources/right_trans.mp4", 640, 480, 30);
 	#else
 	OpenCVCamera leftCamera = OpenCVCamera(1, 640, 480, 30);
 	#endif
@@ -119,7 +119,7 @@ void vision_loop() {
 	leftCamera.nudge(INIT_NUDGE);
 
 	#ifdef _USE_FILES
-	OpenCVCamera rightCamera = OpenCVCamera("resources/left.mp4", 640, 480, 30);
+	OpenCVCamera rightCamera = OpenCVCamera("resources/left_trans.mp4", 640, 480, 30);
 	#else
 	OpenCVCamera rightCamera = OpenCVCamera(0, 640, 480, 30);
 	#endif
