@@ -19,6 +19,44 @@
 #include "r2/R2Protocol.hpp"
 #endif
 
+std::string type2str(int type) {
+  std::string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
+
+void printinfo(cv::Mat& M) {
+	std::string ty =  type2str( M.type() );
+	printf("Matrix: %s %dx%d \n", ty.c_str(), M.cols, M.rows );
+}
+
+typedef struct vision_state_t {
+	cv::Mat rgb_left;					// 8U C3 width x height
+	cv::Mat rgb_right;				// 8U C3 width x height
+	cv::Mat grayscale_left;		// 8U C1 width x height
+	cv::Mat grayscale_right;	// 8U C1 width x height
+	cv::Mat disparity;				// 16S C1 width x height, depth map
+	cv::Mat mesh_points;			// 8U C1 width x height, binary values representing filtered points
+	cv::Mat mesh_meshes;			// 32S C1 width x height, mesh index at each point
+} vision_state_t;
+
 #define _USE_FILES
 #define INIT_NUDGE -40
 //#define VERBOSE
@@ -185,7 +223,11 @@ void vision_loop() {
 
 		featureTracker.trackFeatures(*(camera.getLeftCamera()->getFrame()));
 
-		transform.computeTransform(camera, meshGenerator, featureTracker);
+		// transform.computeTransform(camera, meshGenerator, featureTracker);
+
+		cv::Mat leftG;
+		cv::cvtColor(*(camera.getLeftCamera()->getFrame()), leftG, cv::COLOR_BGR2GRAY);
+		printinfo(leftG);
 
 		featureTracker.tick();
 
