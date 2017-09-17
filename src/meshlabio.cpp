@@ -40,11 +40,13 @@ namespace meshlabio {
     int numFaces = 0;
     // also compute the offset applied to the point indexes for each mesh
     std::vector<int> vertOffsets;
-    for (int i = 0; i < numMeshes; i++) {
-      vertOffsets.push_back(numVerts);
-      numVerts += (*meshes)[i].points.size();
-      numFaces += (*meshes)[i].faces.size();
-    }
+    
+    // TODO
+    // for (int i = 0; i < numMeshes; i++) {
+    //   vertOffsets.push_back(numVerts);
+    //   numVerts += (*meshes)[i].points.size();
+    //   numFaces += (*meshes)[i].faces.size();
+    // }
 
     int h = color->size().height;
     int w = color->size().width;
@@ -59,38 +61,39 @@ namespace meshlabio {
 
     float projectMat[3];
 
-    for (int r = 0; r < numMeshes; r++) {
+    // TODO
+    // for (int r = 0; r < numMeshes; r++) {
 
-      int colorr = (char) (r*333);
-      int colorg = (char) (r*651);
-      int colorb = (char) (r*17);
+    //   int colorr = (char) (r*333);
+    //   int colorg = (char) (r*651);
+    //   int colorb = (char) (r*17);
 
-      for (int i = 0; i < (*meshes)[r].points.size(); i++) {
-        int x = (*meshes)[r].points[i].x;
-        int y = (*meshes)[r].points[i].y;
-        int z = (*meshes)[r].points[i].z;
-        int colIdx = y*w + x;
-        reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
+    //   for (int i = 0; i < (*meshes)[r].points.size(); i++) {
+    //     int x = (*meshes)[r].points[i].x;
+    //     int y = (*meshes)[r].points[i].y;
+    //     int z = (*meshes)[r].points[i].z;
+    //     int colIdx = y*w + x;
+    //     reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
 
-        // no reprojection output
-        //myfile << x << " " << y << " " << z << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
+    //     // no reprojection output
+    //     //myfile << x << " " << y << " " << z << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
         
-        if(type == 0) {
-          // true color
-          myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
-        } else if(type == 1) {
-          // mesh color
-          myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colorr << " " << colorg << " " << colorb << " " << std::endl;
-        }
-      }
-    }
+    //     if(type == 0) {
+    //       // true color
+    //       myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
+    //     } else if(type == 1) {
+    //       // mesh color
+    //       myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colorr << " " << colorg << " " << colorb << " " << std::endl;
+    //     }
+    //   }
+    // }
 
-    for (int r = 0; r < numMeshes; r++) {
-      int offset = vertOffsets[r];
-      for (int i = 0; i < (*meshes)[r].faces.size(); i++) {
-        myfile << "3 " << (*meshes)[r].faces[i].p1 + offset << " " << (*meshes)[r].faces[i].p2 + offset << " " << (*meshes)[r].faces[i].p3 + offset << " " << std::endl;
-      }
-    }
+    // for (int r = 0; r < numMeshes; r++) {
+    //   int offset = vertOffsets[r];
+    //   for (int i = 0; i < (*meshes)[r].faces.size(); i++) {
+    //     myfile << "3 " << (*meshes)[r].faces[i].p1 + offset << " " << (*meshes)[r].faces[i].p2 + offset << " " << (*meshes)[r].faces[i].p3 + offset << " " << std::endl;
+    //   }
+    // }
 
     myfile.close();
     std::cout << "generated meshes" << std::endl;

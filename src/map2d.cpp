@@ -39,9 +39,10 @@ void Map2D::updateMap(std::vector<Mesh>& meshes, int img_width, int img_height) 
   // add all mesh points to the array
   for (int m = 0; m < meshes.size(); m++) {
     for (int f = 0; f < meshes[m].faces.size(); f++) {
-      _addToMap(meshes[m].points[meshes[m].faces[f].p1], img_width, img_height, _mapDims, _mapDims);
-      _addToMap(meshes[m].points[meshes[m].faces[f].p2], img_width, img_height, _mapDims, _mapDims);
-      _addToMap(meshes[m].points[meshes[m].faces[f].p3], img_width, img_height, _mapDims, _mapDims);
+      // TODO
+      // _addToMap(meshes[m].points[meshes[m].faces[f].p1], img_width, img_height, _mapDims, _mapDims);
+      // _addToMap(meshes[m].points[meshes[m].faces[f].p2], img_width, img_height, _mapDims, _mapDims);
+      // _addToMap(meshes[m].points[meshes[m].faces[f].p3], img_width, img_height, _mapDims, _mapDims);
     }
   }
 

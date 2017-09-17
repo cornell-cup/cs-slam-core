@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <queue>
 
 struct Point3D {
   int x;
@@ -15,14 +16,18 @@ struct Point3D {
   int z;
 };
 
+struct PointRC {
+  int r;
+  int c;
+};
+
 struct TriangleMesh {
-  int p1;
-  int p2;
-  int p3;
+  PointRC p1;
+  PointRC p2;
+  PointRC p3;
 };
 
 struct Mesh {
-  std::vector<Point3D> points;
   std::vector<TriangleMesh> faces;
 };
 
@@ -44,6 +49,21 @@ private:
   int _clipXLeft;
 
   std::vector<Mesh> _meshes;
+
+  cv::Mat _meshIdx;
+  cv::Mat _pointIdx;
+  cv::Mat _visited;
+
+  void _iterateNewMesh(
+    int id, 
+    PointRC first_point,
+    cv::Mat *input,
+    std::queue<PointRC>& unassigned_mesh_edge_queue
+  );
+
+  void _fillResolution32(cv::Mat& mat, int r, int c, int v);
+  void _fillResolution8(cv::Mat& mat, int r, int c, int v);
+  bool _pointInBounds(int r, int c, int h, int w);
 };
 
 #endif
