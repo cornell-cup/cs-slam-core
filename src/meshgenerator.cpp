@@ -50,18 +50,20 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
   _visit(first_point.r, first_point.c);
 
   while(!unassigned_mesh_edge_queue.empty()) {
-    PointRC next_point = unassigned_mesh_edge_queue.front();
+    // if a point is on a queue, then it has already been marked as visited
+    // and should be processed
+    PointRC processed_point = unassigned_mesh_edge_queue.front();
     unassigned_mesh_edge_queue.pop();
 
     // Check if already assigned mesh, and skip this point if it is
-    if (_meshIdx.at<int>(next_point.r, next_point.c) != 0) {
+    if (_meshIdx.at<int>(processed_point.r, processed_point.c) != 0) {
       continue;
     }
 
-    short value = input->at<short>(next_point.r, next_point.c);
+    int value = _get_depth_at(input, processed_point.r, processed_point.c);
     if(value > _minValue) {
       // if we can make a new mesh, start one
-      _iterateNewMesh(next_mesh++, next_point, input, unassigned_mesh_edge_queue);
+      _iterateNewMesh(next_mesh++, processed_point, input, unassigned_mesh_edge_queue);
     } else {
       // if this point is useless, enqueue its surrounding points
       for (int i = -_resolution; i <= _resolution; i+= _resolution) {   // r modifier
@@ -69,8 +71,8 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
           // skip this point
           if (i == 0 && j == 0) continue;
 
-          int next_r = next_point.r + i;
-          int next_c = next_point.c + j;
+          int next_r = processed_point.r + i;
+          int next_c = processed_point.c + j;
 
           // check if valid and not visited
           if (_pointInBounds(next_r, next_c, h, w) && _not_visited(next_r, next_c)) {
@@ -128,11 +130,12 @@ void MeshGenerator::_iterateNewMesh(
   _meshes.push_back({ faces, points });
 
   while(!current_mesh_edge_queue.empty()) {
-    PointRC next_point = current_mesh_edge_queue.front();
+    PointRC processed_point = current_mesh_edge_queue.front();
     current_mesh_edge_queue.pop();
 
-    int r = next_point.r;
-    int c = next_point.c;
+    int processed_r = processed_point.r;
+    int processed_c = processed_point.c;
+    int processed_value = _get_depth_at(input, processed_point.r, processed_point.c);
 
     // check all 8 surrounding points
     for (int i = -_resolution; i <= _resolution; i+= _resolution) {   // r modifier
@@ -140,18 +143,17 @@ void MeshGenerator::_iterateNewMesh(
         // skip 0,0 (this point)
         if (i == 0 && j == 0) continue;
 
-        int next_r = r + i;
-        int next_c = c + j;
-
-        short value = input->at<short>(next_r, next_c);
+        int next_r = processed_r + i;
+        int next_c = processed_c + j;
 
         // make sure valid point
         if (_pointInBounds(next_r, next_c, h, w)) {
-          short next_value = input->at<short>(next_r, next_c);
+          int next_value = _get_depth_at(input, next_r, next_c);
+
           // check if point not already in a mesh
           if (_meshIdx.at<int>(next_r, next_c) == 0) {          
-            // check if we can add the next point to the new mesh (within threshold)
-            if (next_value > _minValue && std::abs(next_value - value) < _diffThreshold) {
+            // check if we can add the next point to the new mesh (within threshold from anchor point)
+            if (next_value > _minValue && std::abs(next_value - processed_value) < _diffThreshold) {
               // set the mesh and point index matricies for the new point in the mesh
               _fillMesh(next_r, next_c, id);
 
@@ -180,12 +182,12 @@ void MeshGenerator::_iterateNewMesh(
             if (_meshIdx.at<int>(next_r, next_c) == id) {
               // check below
               if (_meshIdx.at<int>(next_r, next_c - _resolution) == id) {
-                faces.push_back({.p1 = next_point, .p2 = {.r = next_r, .c = next_c}, .p3 = {.r = next_r, .c = next_c - _resolution} });
+                faces.push_back({.p1 = processed_point, .p2 = {.r = next_r, .c = next_c}, .p3 = {.r = next_r, .c = next_c - _resolution} });
               }
 
               // check right
               if (_meshIdx.at<int>(next_r - _resolution, next_c) == id) {
-                faces.push_back({.p1 = next_point,  .p2 = {.r = next_r - _resolution, .c = next_c}, .p3 = {.r = next_r, .c = next_c} });
+                faces.push_back({.p1 = processed_point,  .p2 = {.r = next_r - _resolution, .c = next_c}, .p3 = {.r = next_r, .c = next_c} });
               }
             }
           }
@@ -214,4 +216,8 @@ void MeshGenerator::_visit(int r, int c) {
 
 bool MeshGenerator::_not_visited(int r, int c) {
   return _visited.at<unsigned char>(r, c) == 0;
+}
+
+int MeshGenerator::_get_depth_at(cv::Mat* input, int r, int c) {
+  return input->at<short>(r, c);
 }

@@ -77,6 +77,8 @@ private:
   // like a box from (r,c) to (r+_resolution, +resolution) and
   // makes sure entire box is in bounds
   bool _pointInBounds(int r, int c, int h, int w);
+
+  int _get_depth_at(cv::Mat* input, int r, int c);
 };
 
 #endif
