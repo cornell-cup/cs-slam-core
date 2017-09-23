@@ -36,10 +36,10 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
   int next_mesh = 1;
 
   // 0 means not part of mesh, i>0 means part of mesh i
-  _meshIdx = cv::Mat::zeros(h, w,  CV_32S);
+  _meshIdx = cv::Mat::zeros(input->size(),  CV_32S);
 
   // 0 means not visited, 1 means visited
-  _visited = cv::Mat::zeros(h, w,  CV_8U);
+  _visited = cv::Mat::zeros(input->size(),  CV_8U);
 
   // if on a queue, then you have been visited
   std::queue<PointRC> unassigned_mesh_edge_queue;
@@ -89,8 +89,8 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
     if(_meshes[j].faces.size() < _minMeshes) {
       // zero out _meshIdx
       for (int i = 0; i < _meshes[j].points.size(); i++) {
-        PointRC point = _meshes[j].points[i];
-        _fillResolution32(_meshIdx, point.r, point.c, 0);
+        Point3D point = _meshes[j].points[i];
+        _fillResolution32(_meshIdx, point.y, point.x, 0);
       }
 
 	    _meshes.erase(_meshes.begin() + j);
@@ -98,7 +98,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
     }
   }
 
-  _pointIdx = cv::Mat::zeros(h, w,  CV_8U);
+  _pointIdx = cv::Mat::zeros(input->size(),  CV_8U);
   cv::compare(_meshIdx, 0, _pointIdx, cv::CMP_GT);
 }
 
@@ -123,7 +123,7 @@ void MeshGenerator::_iterateNewMesh(
 
   // create new mesh and faces vector
   std::vector<TriangleMesh> faces;
-  std::vector<PointRC> points;
+  std::vector<Point3D> points;
   _meshes.push_back({ faces, points });
 
   while(!current_mesh_edge_queue.empty()) {
@@ -132,7 +132,6 @@ void MeshGenerator::_iterateNewMesh(
 
     int r = next_point.r;
     int c = next_point.c;
-    short value = input->at<short>(r, c);
 
     // check all 8 surrounding points
     for (int i = -_resolution; i <= _resolution; i+= _resolution) {   // r modifier
@@ -143,12 +142,15 @@ void MeshGenerator::_iterateNewMesh(
         int next_r = r + i;
         int next_c = c + j;
 
+        short value = input->at<short>(next_r, next_c);
+
         // make sure valid point
         if (_pointInBounds(next_r, next_c, h, w)) {
+          short next_value = input->at<short>(next_r, next_c);
           // check if point not already in a mesh
           if (_meshIdx.at<int>(next_r, next_c) == 0) {          
-            // check if we can add this point to the new mesh (within threshold)
-            if (value > _minValue && std::abs(input->at<short>(next_r, next_c) - value) < _diffThreshold) {
+            // check if we can add the next point to the new mesh (within threshold)
+            if (next_value > _minValue && std::abs(next_value - value) < _diffThreshold) {
               // set the mesh and point index matricies for the new point in the mesh
               _fillResolution32(_meshIdx, next_r, next_c, id);
 
@@ -157,7 +159,7 @@ void MeshGenerator::_iterateNewMesh(
               // only add to queue if not visited
               if (_visited.at<unsigned char>(next_r, next_c) == 0) {
                 // add to points vector
-                points.push_back(next_point);
+                points.push_back({.x = next_c, .y = next_r, .z = next_value});
                 // put it on the current mesh edge queue to process
                 current_mesh_edge_queue.push(next_point);
               }
