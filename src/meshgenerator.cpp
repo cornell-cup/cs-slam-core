@@ -9,7 +9,7 @@ MeshGenerator::MeshGenerator() {
   _resolution = 4;
 
 	// the threshold between two neighboring pixel's depth gradient to put them on the same mesh
-  // usually ~ 2*resolution
+  // usually ~ 4*resolution
   _diffThreshold = 16;
 
 	// the minimum number of faces a mesh must have
@@ -24,169 +24,63 @@ MeshGenerator::MeshGenerator() {
 
 MeshGenerator::~MeshGenerator() {}
 
-void MeshGenerator::writeToFile(std::string fname, cv::Mat* color) {
-	std::cout << _meshes.size() << std::endl;
-
-	int numMeshes = _meshes.size();
-
-	// compute the total number of verticies and faces
-	int numVerts = 0;
-	int numFaces = 0;
-	// also compute the offset applied to the point indexes for each mesh
-	std::vector<int> vertOffsets;
-	for (int i = 0; i < numMeshes; i++) {
-		vertOffsets.push_back(numVerts);
-		numVerts += _meshes[i].points.size();
-		numFaces += _meshes[i].faces.size();
-	}
-
-	int h = color->size().height;
-	int w = color->size().width;
-
-	cv::Mat colors = color->reshape(1, w*h);
-
-	std::ofstream myfile;
-	myfile.open(fname);
-
-	// setup header
-	myfile << "ply\nformat ascii 1.0\nelement vertex " << numVerts << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nelement face " << numFaces << "\nproperty list uchar int vertex_index\nend_header" << std::endl;
-
-	float projectMat[3];
-
-	for (int r = 0; r < numMeshes; r++) {
-
-		int colorr = (char) (r*333);
-		int colorg = (char) (r*651);
-		int colorb = (char) (r*17);
-
-		for (int i = 0; i < _meshes[r].points.size(); i++) {
-			int x = _meshes[r].points[i].x;
-			int y = _meshes[r].points[i].y;
-			int z = _meshes[r].points[i].z;
-			int colIdx = y*w + x;
-			_reprojectTo3D(x, y, z, h, w, projectMat);
-
-			//myfile << x << " " << y << " " << z << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
-			//myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colors.at<int>(colIdx, 2) << " " << colors.at<int>(colIdx, 1) << " " << colors.at<int>(colIdx, 0) << " " << std::endl;
-			myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colorr << " " << colorg << " " << colorb << " " << std::endl;
-		}
-	}
-
-	for (int r = 0; r < numMeshes; r++) {
-		int offset = vertOffsets[r];
-		for (int i = 0; i < _meshes[r].faces.size(); i++) {
-			myfile << "3 " << _meshes[r].faces[i].p1 + offset << " " << _meshes[r].faces[i].p2 + offset << " " << _meshes[r].faces[i].p3 + offset << " " << std::endl;
-		}
-	}
-
-	myfile.close();
-	std::cout << "generated meshes" << std::endl;
-}
-
 std::vector<Mesh>* MeshGenerator::getMeshes() {
   return &_meshes;
-}
-
-void MeshGenerator::_reprojectTo3D(int x, int y, int disp, int h, int w, float* dest) {
-	dest[0] = (x-0.5f*w)/ disp;
-	dest[1] = (-y+0.5f*h)/ disp;
-	dest[2] = (-0.8*w)/ disp;
 }
 
 void MeshGenerator::generateMesh(cv::Mat* input) {
 	_meshes.clear();
   int w = input->size().width;
-	int h = input->size().height;
+  int h = input->size().height;
+  
+  int next_mesh = 1;
 
-  cv::Mat meshIdx = cv::Mat::zeros(h, w,  CV_32S);
-  cv::Mat pointIdx = cv::Mat::zeros(h, w,  CV_32S);
+  // 0 means not part of mesh, i>0 means part of mesh i
+  _meshIdx = cv::Mat::zeros(input->size(),  CV_32S);
 
-  int r,c;
+  // 0 means not visited, 1 means visited
+  _visited = cv::Mat::zeros(input->size(),  CV_8U);
 
-  for(r = 0; r < h; r+=_resolution) {
-    for(c = _clipXLeft; c < w; c+=_resolution) {
-      short value = input->at<short>(r,c);
-      if(value > _minValue) {
-        int matchIdx = 0;
+  // if on a queue, then you have been visited
+  std::queue<PointRC> unassigned_mesh_edge_queue;
 
-        // check 4 surrounding points (0, -1), (-1,-1), (-1,0), (-1,1) for acceptable gradient thresholds
-        if(c - _resolution >= 0 && std::abs(input->at<short>(r, c - _resolution) - value) < _diffThreshold) {
-          matchIdx = meshIdx.at<int>(r, c - _resolution);
-        } else if(c - _resolution >= 0 && r - _resolution >= 0 && std::abs(input->at<short>(r - _resolution, c - _resolution) - value) < _diffThreshold) {
-          matchIdx = meshIdx.at<int>(r - _resolution, c - _resolution);
-        } else if(r - _resolution >= 0 && std::abs(input->at<short>(r - _resolution) - value) < _diffThreshold) {
-          matchIdx = meshIdx.at<int>(r - _resolution, c);
-        } else if(c + _resolution < w && r - _resolution >= 0 && std::abs(input->at<short>(r - _resolution, c + _resolution) - value) < _diffThreshold) {
-          matchIdx = meshIdx.at<int>(r - _resolution, c + _resolution);
-        }
+  // put first point on queue and mark as visited
+  PointRC first_point = {.r = 0, .c = _clipXLeft};
+  unassigned_mesh_edge_queue.push(first_point);
+  _visit(first_point.r, first_point.c);
 
-		// check if we can connect the current mesh with the above and to the right mesh
-		if (matchIdx != 0 && c + _resolution < w && r - _resolution >= 0 && std::abs(input->at<short>(r - _resolution, c + _resolution) - value) < _diffThreshold) {
-			int newMatchIdx = meshIdx.at<int>(r - _resolution, c + _resolution);
+  while(!unassigned_mesh_edge_queue.empty()) {
+    // if a point is on a queue, then it has already been marked as visited
+    // and should be processed
+    PointRC processed_point = unassigned_mesh_edge_queue.front();
+    unassigned_mesh_edge_queue.pop();
 
-			// we can connect, check if different mesh
-			if (newMatchIdx != 0 && matchIdx != newMatchIdx) {
-				// connect meshes
+    // Check if already assigned mesh, and skip this point if it is
+    if (_meshIdx.at<int>(processed_point.r, processed_point.c) != 0) {
+      continue;
+    }
 
-				// compute point index offset for the faces
-				int pointIdxOffset = _meshes[newMatchIdx - 1].points.size();
+    int value = _get_depth_at(input, processed_point.r, processed_point.c);
+    if(value > _minValue) {
+      // if we can make a new mesh, start one
+      _iterateNewMesh(next_mesh++, processed_point, input, unassigned_mesh_edge_queue);
+    } else {
+      // if this point is useless, enqueue its surrounding points
+      for (int i = -_resolution; i <= _resolution; i+= _resolution) {   // r modifier
+        for (int j = -_resolution; j <= _resolution; j+= _resolution) { // c modifier
+          // skip this point
+          if (i == 0 && j == 0) continue;
 
-				// append the points to the connected mesh
-				for (int i = 0; i < _meshes[matchIdx - 1].points.size(); i++) {
-					int x = _meshes[matchIdx - 1].points[i].x;
-					int y = _meshes[matchIdx - 1].points[i].y;
-					int z = _meshes[matchIdx - 1].points[i].z;
-					_meshes[newMatchIdx - 1].points.push_back({x, y, z});
-					pointIdx.at<int>(y, x) = _meshes[newMatchIdx - 1].points.size() - 1;
-					meshIdx.at<int>(y, x) = newMatchIdx;
-				}
-				_meshes[matchIdx - 1].points.clear();
-				//_meshes[newMatchIdx - 1].points.insert(_meshes[newMatchIdx - 1].points.end(), _meshes[matchIdx - 1].points.begin(), _meshes[matchIdx - 1].points.end());
+          int next_r = processed_point.r + i;
+          int next_c = processed_point.c + j;
 
-				// readjust the faces and add the to the mesh
-				for (int i = 0; i < _meshes[matchIdx - 1].faces.size(); i++) {
-					_meshes[newMatchIdx - 1].faces.push_back({_meshes[matchIdx - 1].faces[i].p1+pointIdxOffset, _meshes[matchIdx - 1].faces[i].p2 + pointIdxOffset, _meshes[matchIdx - 1].faces[i].p3 + pointIdxOffset});
-				}
-				_meshes[matchIdx - 1].faces.clear();
+          // check if valid and not visited
+          if (_pointInBounds(next_r, next_c, h, w) && _not_visited(next_r, next_c)) {
+            // add to unassigned queue
+            unassigned_mesh_edge_queue.push({.r = next_r, .c = next_c});
 
-				// TODO figure out why this causes a memory error
-				// probably something wrong with meshIdx resetting when the matchIdx != _meshes.size()
-				// _meshes.erase(_meshes.begin() + (matchIdx - 1));
-				matchIdx = newMatchIdx;
-			}
-		}
-
-        // new mesh
-        if (matchIdx == 0) {
-			std::vector<Point3D> points;
-			std::vector<TriangleMesh> meshes;
-          // add this point to the mesh (x,y,z)
-			points.push_back({ c, r, value });
-			pointIdx.at<int>(r, c) = points.size() - 1;
-
-		  _meshes.push_back({ points, meshes });
-          meshIdx.at<int>(r,c) = _meshes.size();
-        }
-        // append to mesh
-        else {
-					// TODO why won't this work
-          //Mesh mesh = _meshes[matchIdx-1];
-			_meshes[matchIdx - 1].points.push_back({ c, r, value });
-		  meshIdx.at<int>(r, c) = matchIdx;
-          pointIdx.at<int>(r, c) = _meshes[matchIdx - 1].points.size() - 1;
-
-          int p1Idx = c - _resolution >= 0 ? meshIdx.at<int>(r, c - _resolution) : 0;
-          int p2Idx = r - _resolution >= 0 ? meshIdx.at<int>(r - _resolution, c) : 0;
-          int p3Idx = (c + _resolution < w && r - _resolution >= 0) ? meshIdx.at<int>(r - _resolution, c + _resolution) : 0;
-
-          // create a face with left and top point
-          if(matchIdx == p1Idx && matchIdx == p2Idx) {
-			  _meshes[matchIdx - 1].faces.push_back({pointIdx.at<int>(r, c), pointIdx.at<int>(r - _resolution, c), pointIdx.at<int>(r,c - _resolution) });
-          }
-
-          // create a face with top and top-left point
-          if(matchIdx == p2Idx && matchIdx == p3Idx) {
-			  _meshes[matchIdx - 1].faces.push_back({pointIdx.at<int>(r, c), pointIdx.at<int>(r - _resolution, c + _resolution), pointIdx.at<int>(r - _resolution, c) });
+            // we added it to a queue, so it has been visited
+            _visit(next_r, next_c);
           }
         }
       }
@@ -194,10 +88,142 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
   }
 
   // remove the small meshes
-  for(r = 0; r < _meshes.size(); r++) {
-    if(_meshes[r].faces.size() < _minMeshes) {
-	  _meshes.erase(_meshes.begin() + r);
-      r--;
+  for(int j = 0; j < _meshes.size(); j++) {
+    if(_meshes[j].faces.size() < _minMeshes) {
+      // zero out _meshIdx
+      for (int i = 0; i < _meshes[j].points.size(); i++) {
+        Point3D point = _meshes[j].points[i];
+        _fillMesh(point.y, point.x, 0);
+      }
+
+	    _meshes.erase(_meshes.begin() + j);
+      j--;
     }
   }
+
+  _pointIdx = cv::Mat::zeros(input->size(),  CV_8U);
+  cv::compare(_meshIdx, 0, _pointIdx, cv::CMP_GT);
+}
+
+void MeshGenerator::_iterateNewMesh(
+  int id, 
+  PointRC first_point,
+  cv::Mat *input,
+  std::queue<PointRC>& unassigned_mesh_edge_queue
+) {
+  std::queue<PointRC> current_mesh_edge_queue;
+
+  int w = input->size().width;
+  int h = input->size().height;
+
+  // Handle first point
+  current_mesh_edge_queue.push(first_point);
+
+  // should have already been visited, no need to repeat
+  
+  // set the mesh index matrix for the new point
+  _fillMesh(first_point.r, first_point.c, id);
+
+  // create new mesh and faces vector
+  std::vector<TriangleMesh> faces;
+  std::vector<Point3D> points;
+  _meshes.push_back({ faces, points });
+  
+  // add first point 
+  points.push_back({.x = first_point.c, .y = first_point.r, .z = _get_depth_at(input, first_point.r, first_point.c)});
+
+  while(!current_mesh_edge_queue.empty()) {
+    // process means that the point has been visited, added to points vector, and its index has
+    // been filled in _meshIdx with id
+    PointRC processed_point = current_mesh_edge_queue.front();
+    current_mesh_edge_queue.pop();
+
+    int processed_r = processed_point.r;
+    int processed_c = processed_point.c;
+    int processed_value = _get_depth_at(input, processed_point.r, processed_point.c);
+
+    // check all 8 surrounding points to see if we can add them to the mesh
+    for (int i = -_resolution; i <= _resolution; i+= _resolution) {   // r modifier
+      for (int j = -_resolution; j <= _resolution; j+= _resolution) { // c modifier
+        // skip 0,0 (this point)
+        if (i == 0 && j == 0) continue;
+
+        int next_r = processed_r + i;
+        int next_c = processed_c + j;
+
+        // make sure valid point
+        if (_pointInBounds(next_r, next_c, h, w)) {
+          int next_value = _get_depth_at(input, next_r, next_c);
+
+          // make sure not in mesh 
+          // could have already been visted, in which case its also on the unassigned_mesh_edge_queue
+          if (_meshIdx.at<int>(next_r, next_c) == 0) {          
+            // check if we can add the next point to the new mesh (within threshold from anchor point)
+            if (next_value > _minValue && std::abs(next_value - processed_value) < _diffThreshold) {
+              // set the mesh and point index matricies for the new point in the mesh
+              _fillMesh(next_r, next_c, id);
+
+              // only add to queue if not visited
+              if (_not_visited(next_r, next_c)) {
+                // add to points vector
+                points.push_back({.x = next_c, .y = next_r, .z = next_value});
+                // put it on the current mesh edge queue to process
+                current_mesh_edge_queue.push({.r = next_r, .c = next_c});
+              }
+            } else {
+              // only add to queue if not visited
+              if (_not_visited(next_r, next_c)) {
+                // put it on the unassigned mesh edge queue to 
+                unassigned_mesh_edge_queue.push({.r = next_r, .c = next_c});
+              }
+            }
+
+            // the new point was either already added or we just added it to a queue, so it has been visited
+            _visit(next_r, next_c);
+          }
+
+          // add faces if the bottom right most point in bounds
+          if (i == _resolution && j == _resolution) {
+            // Only add the 2 faces between (r,c) and (r+res, c+res) if they exist
+            if (_meshIdx.at<int>(next_r, next_c) == id) {
+              // check below
+              if (_meshIdx.at<int>(next_r, next_c - _resolution) == id) {
+                faces.push_back({.p1 = processed_point, .p2 = {.r = next_r, .c = next_c}, .p3 = {.r = next_r, .c = next_c - _resolution} });
+              }
+
+              // check right
+              if (_meshIdx.at<int>(next_r - _resolution, next_c) == id) {
+                faces.push_back({.p1 = processed_point,  .p2 = {.r = next_r - _resolution, .c = next_c}, .p3 = {.r = next_r, .c = next_c} });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// in bounds requires point + resolution to be in bounds as well
+bool MeshGenerator::_pointInBounds(int r, int c, int h, int w) {
+  return r >= 0 && r + _resolution <= h && c >= _clipXLeft && c + _resolution <= w;
+}
+
+void MeshGenerator::_fillMesh(int r, int c, int id) {
+  for (int i = r; i < r + _resolution; i++) {
+    for (int j = c; j < c + _resolution; j++) {
+      _meshIdx.at<int>(i, j) = id;
+    }
+  }
+}
+
+void MeshGenerator::_visit(int r, int c) {
+  _visited.at<unsigned char>(r, c) = 1;
+}
+
+bool MeshGenerator::_not_visited(int r, int c) {
+  return _visited.at<unsigned char>(r, c) == 0;
+}
+
+int MeshGenerator::_get_depth_at(cv::Mat* input, int r, int c) {
+  return input->at<short>(r, c);
 }

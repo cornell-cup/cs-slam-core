@@ -1,0 +1,93 @@
+<html>
+  <head>
+    <title>Visualizer</title>
+    <meta charset=utf-8>
+    <style>
+			body {
+				margin: 0;
+				background-color: #f0f0f0;
+			}
+			canvas {
+				width: 100%;
+				height: 100%
+			}
+		</style>
+  </head>
+  <body>
+    <script src="three.min.js"></script>
+		<script>
+			var sendRequest = function(callback) {
+				var xhr = new XMLHttpRequest();
+
+				xhr.onreadystatechange = function () {
+					if (this.readyState != 4) return;
+
+					if (this.status == 200) {
+						console.log(this.responseText);
+						var data = JSON.parse(this.responseText.replace(new RegExp(';', 'g'), ','));
+						callback(data);
+					}
+
+					// end of state change: it can be after some time (async)
+				};
+
+				xhr.open("POST", "/get_matrix", true);
+				xhr.setRequestHeader('Content-Type', 'application/json');
+				xhr.send();
+			}
+
+		</script>
+		<script>
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, .1, 1000 );
+
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			var dirLight = new THREE.DirectionalLight(0xffffff, 1);
+			dirLight.position.set(100, 100, 50);
+			scene.add(dirLight);
+
+			var ambLight = new THREE.AmbientLight(0x404040, 2.0);
+			scene.add(ambLight);
+
+			// var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+      var TILE_SIZE = 1/3;
+			var geometry = new THREE.CylinderGeometry( TILE_SIZE, TILE_SIZE*3, TILE_SIZE*3, 4 );
+			// var material = new THREE.MeshNormalMaterial();
+			var material = new THREE.MeshPhongMaterial( { color: 0x6F6CC5, specular: 0x555555, shininess: 10 } );
+			var cube = new THREE.Mesh( geometry, material );
+			scene.add( cube );
+			scene.background = new THREE.Color( 0xffffff );
+
+			camera.position.z = 10;
+			camera.position.y = 4;
+			camera.lookAt(new THREE.Vector3(0,0,0));
+
+			cube.matrixAutoUpdate = false;
+
+			var render = function () {
+				requestAnimationFrame( render );
+
+				renderer.render(scene, camera);
+			};
+
+			render();
+
+			var updateMat = function() {
+				sendRequest(function(data) {
+					cube.matrix.set(
+						data[0], data[1], data[2], data[3],
+						data[4], data[5], data[6], data[7],
+						data[8], data[9], data[10], data[11],
+						data[12], data[13], data[14], data[15],
+					);
+					setTimeout(updateMat, 500);
+				});
+			}
+
+			updateMat();
+		</script>
+  </body>
+</html>
