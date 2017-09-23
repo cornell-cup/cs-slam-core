@@ -29,6 +29,7 @@ struct TriangleMesh {
 
 struct Mesh {
   std::vector<TriangleMesh> faces;
+  std::vector<PointRC> points;
 };
 
 class MeshGenerator {

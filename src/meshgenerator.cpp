@@ -59,10 +59,15 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
 
     short value = input->at<short>(next_point.r, next_point.c);
     if(value > _minValue) {
+      // if we can make a new mesh, start one
       _iterateNewMesh(next_mesh++, next_point, input, unassigned_mesh_edge_queue);
     } else {
+      // if this point is useless, enqueue its surrounding points
       for (int i = -_resolution; i <= _resolution; i+= _resolution) {   // r modifier
         for (int j = -_resolution; j <= _resolution; j+= _resolution) { // c modifier
+          // skip this point
+          if (i == 0 && j == 0) continue;
+
           int next_r = next_point.r + i;
           int next_c = next_point.c + j;
 
@@ -80,15 +85,21 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
   }
 
   // remove the small meshes, TODO update mesh and point mats
-  for(r = 0; r < _meshes.size(); r++) {
-    if(_meshes[r].faces.size() < _minMeshes) {
-	    _meshes.erase(_meshes.begin() + r);
-      r--;
+  for(int j = 0; j < _meshes.size(); j++) {
+    if(_meshes[j].faces.size() < _minMeshes) {
+      // zero out _meshIdx
+      for (int i = 0; i < _meshes[j].points.size(); i++) {
+        PointRC point = _meshes[j].points[i];
+        _fillResolution32(_meshIdx, point.r, point.c, 0);
+      }
+
+	    _meshes.erase(_meshes.begin() + j);
+      j--;
     }
   }
 
   _pointIdx = cv::Mat::zeros(h, w,  CV_8U);
-  cv::compare(_meshIdx, 0, cv::CMP_GT, _pointIdx)
+  cv::compare(_meshIdx, 0, _pointIdx, cv::CMP_GT);
 }
 
 void MeshGenerator::_iterateNewMesh(
@@ -112,7 +123,8 @@ void MeshGenerator::_iterateNewMesh(
 
   // create new mesh and faces vector
   std::vector<TriangleMesh> faces;
-  _meshes.push_back({ faces });
+  std::vector<PointRC> points;
+  _meshes.push_back({ faces, points });
 
   while(!current_mesh_edge_queue.empty()) {
     PointRC next_point = current_mesh_edge_queue.front();
@@ -140,16 +152,20 @@ void MeshGenerator::_iterateNewMesh(
               // set the mesh and point index matricies for the new point in the mesh
               _fillResolution32(_meshIdx, next_r, next_c, id);
 
+              PointRC next_point = {.r = next_r, .c = next_c};
+
               // only add to queue if not visited
               if (_visited.at<unsigned char>(next_r, next_c) == 0) {
+                // add to points vector
+                points.push_back(next_point);
                 // put it on the current mesh edge queue to process
-                current_mesh_edge_queue.push({.r = next_r, .c = next_c});
+                current_mesh_edge_queue.push(next_point);
               }
             } else {
               // only add to queue if not visited
               if (_visited.at<unsigned char>(next_r, next_c) == 0) {
                 // put it on the unassigned mesh edge queue to 
-                unassigned_mesh_edge_queue.push({.r = next_r, .c = next_c});
+                unassigned_mesh_edge_queue.push(next_point);
               }
             }
 
