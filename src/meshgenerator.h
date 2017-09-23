@@ -55,6 +55,8 @@ private:
   cv::Mat _pointIdx;
   cv::Mat _visited;
 
+  // using [first_point] as the first point of a mesh, flood fill 
+  // [input] to determine other points in the mesh with id [id]
   void _iterateNewMesh(
     int id, 
     PointRC first_point,
@@ -62,8 +64,18 @@ private:
     std::queue<PointRC>& unassigned_mesh_edge_queue
   );
 
-  void _fillResolution32(cv::Mat& mat, int r, int c, int v);
-  void _fillResolution8(cv::Mat& mat, int r, int c, int v);
+  // fill meshIdx from (r,c) to (r+_resolution, +resolution) with id
+  void _fillMesh(int r, int c, int id);
+
+  // set point (r,c) to visited
+  void _visit(int r, int c);
+
+  // return true if point (r,c) has not been visited
+  bool _not_visited(int r, int c);
+
+  // return true if the point is in bounds, (r,c) is treated
+  // like a box from (r,c) to (r+_resolution, +resolution) and
+  // makes sure entire box is in bounds
   bool _pointInBounds(int r, int c, int h, int w);
 };
 

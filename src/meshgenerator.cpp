@@ -45,8 +45,9 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
   std::queue<PointRC> unassigned_mesh_edge_queue;
 
   // put first point on queue and mark as visited
-  unassigned_mesh_edge_queue.push({.r = _clipXLeft, .c = 0});
-  _fillResolution8(_visited, _clipXLeft, 0, 1);
+  PointRC first_point = {.r = 0, .c = _clipXLeft};
+  unassigned_mesh_edge_queue.push(first_point);
+  _visit(first_point.r, first_point.c);
 
   while(!unassigned_mesh_edge_queue.empty()) {
     PointRC next_point = unassigned_mesh_edge_queue.front();
@@ -72,12 +73,12 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
           int next_c = next_point.c + j;
 
           // check if valid and not visited
-          if (_pointInBounds(next_r, next_c, h, w) && _visited.at<unsigned char>(next_r, next_c) == 0) {
+          if (_pointInBounds(next_r, next_c, h, w) && _not_visited(next_r, next_c)) {
             // add to unassigned queue
             unassigned_mesh_edge_queue.push({.r = next_r, .c = next_c});
 
             // we added it to a queue, so it has been visited
-            _fillResolution8(_visited, next_r, next_c, 1);
+            _visit(next_r, next_c);
           }
         }
       }
@@ -90,7 +91,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
       // zero out _meshIdx
       for (int i = 0; i < _meshes[j].points.size(); i++) {
         Point3D point = _meshes[j].points[i];
-        _fillResolution32(_meshIdx, point.y, point.x, 0);
+        _fillMesh(point.y, point.x, 0);
       }
 
 	    _meshes.erase(_meshes.begin() + j);
@@ -119,7 +120,7 @@ void MeshGenerator::_iterateNewMesh(
   // should have already been visited
   
   // set the mesh index matrix for the new point
-  _fillResolution32(_meshIdx, first_point.r, first_point.c, id);
+  _fillMesh(first_point.r, first_point.c, id);
 
   // create new mesh and faces vector
   std::vector<TriangleMesh> faces;
@@ -152,27 +153,25 @@ void MeshGenerator::_iterateNewMesh(
             // check if we can add the next point to the new mesh (within threshold)
             if (next_value > _minValue && std::abs(next_value - value) < _diffThreshold) {
               // set the mesh and point index matricies for the new point in the mesh
-              _fillResolution32(_meshIdx, next_r, next_c, id);
-
-              PointRC next_point = {.r = next_r, .c = next_c};
+              _fillMesh(next_r, next_c, id);
 
               // only add to queue if not visited
-              if (_visited.at<unsigned char>(next_r, next_c) == 0) {
+              if (_not_visited(next_r, next_c)) {
                 // add to points vector
                 points.push_back({.x = next_c, .y = next_r, .z = next_value});
                 // put it on the current mesh edge queue to process
-                current_mesh_edge_queue.push(next_point);
+                current_mesh_edge_queue.push({.r = next_r, .c = next_c});
               }
             } else {
               // only add to queue if not visited
-              if (_visited.at<unsigned char>(next_r, next_c) == 0) {
+              if (_not_visited(next_r, next_c)) {
                 // put it on the unassigned mesh edge queue to 
-                unassigned_mesh_edge_queue.push(next_point);
+                unassigned_mesh_edge_queue.push({.r = next_r, .c = next_c});
               }
             }
 
             // the new point was either already added or we just added it to a queue, so it has been visited
-            _fillResolution8(_visited, next_r, next_c, 1);
+            _visit(next_r, next_c);
           }
 
           // add faces if the bottom right most point in bounds
@@ -201,18 +200,18 @@ bool MeshGenerator::_pointInBounds(int r, int c, int h, int w) {
   return r >= 0 && r + _resolution <= h && c >= _clipXLeft && c + _resolution <= w;
 }
 
-void MeshGenerator::_fillResolution32(cv::Mat& mat, int r, int c, int v) {
+void MeshGenerator::_fillMesh(int r, int c, int id) {
   for (int i = r; i < r + _resolution; i++) {
     for (int j = c; j < c + _resolution; j++) {
-      mat.at<int>(i, j) = v;
+      _meshIdx.at<int>(i, j) = id;
     }
   }
 }
 
-void MeshGenerator::_fillResolution8(cv::Mat& mat, int r, int c, int v) {
-  for (int i = r; i < r + _resolution; i++) {
-    for (int j = c; j < c + _resolution; j++) {
-      mat.at<unsigned char>(i, j) = v;
-    }
-  }
+void MeshGenerator::_visit(int r, int c) {
+  _visited.at<unsigned char>(r, c) = 1;
+}
+
+bool MeshGenerator::_not_visited(int r, int c) {
+  return _visited.at<unsigned char>(r, c) == 0;
 }
