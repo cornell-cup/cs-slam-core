@@ -87,7 +87,7 @@ void MeshGenerator::generateMesh(cv::Mat* input) {
     }
   }
 
-  // remove the small meshes, TODO update mesh and point mats
+  // remove the small meshes
   for(int j = 0; j < _meshes.size(); j++) {
     if(_meshes[j].faces.size() < _minMeshes) {
       // zero out _meshIdx
@@ -119,7 +119,7 @@ void MeshGenerator::_iterateNewMesh(
   // Handle first point
   current_mesh_edge_queue.push(first_point);
 
-  // should have already been visited
+  // should have already been visited, no need to repeat
   
   // set the mesh index matrix for the new point
   _fillMesh(first_point.r, first_point.c, id);
@@ -128,8 +128,13 @@ void MeshGenerator::_iterateNewMesh(
   std::vector<TriangleMesh> faces;
   std::vector<Point3D> points;
   _meshes.push_back({ faces, points });
+  
+  // add first point 
+  points.push_back({.x = first_point.c, .y = first_point.r, .z = _get_depth_at(input, first_point.r, first_point.c)});
 
   while(!current_mesh_edge_queue.empty()) {
+    // process means that the point has been visited, added to points vector, and its index has
+    // been filled in _meshIdx with id
     PointRC processed_point = current_mesh_edge_queue.front();
     current_mesh_edge_queue.pop();
 
@@ -137,7 +142,7 @@ void MeshGenerator::_iterateNewMesh(
     int processed_c = processed_point.c;
     int processed_value = _get_depth_at(input, processed_point.r, processed_point.c);
 
-    // check all 8 surrounding points
+    // check all 8 surrounding points to see if we can add them to the mesh
     for (int i = -_resolution; i <= _resolution; i+= _resolution) {   // r modifier
       for (int j = -_resolution; j <= _resolution; j+= _resolution) { // c modifier
         // skip 0,0 (this point)
@@ -150,7 +155,8 @@ void MeshGenerator::_iterateNewMesh(
         if (_pointInBounds(next_r, next_c, h, w)) {
           int next_value = _get_depth_at(input, next_r, next_c);
 
-          // check if point not already in a mesh
+          // make sure not in mesh 
+          // could have already been visted, in which case its also on the unassigned_mesh_edge_queue
           if (_meshIdx.at<int>(next_r, next_c) == 0) {          
             // check if we can add the next point to the new mesh (within threshold from anchor point)
             if (next_value > _minValue && std::abs(next_value - processed_value) < _diffThreshold) {
