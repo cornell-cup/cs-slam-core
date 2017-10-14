@@ -35,19 +35,17 @@ namespace meshlabio {
 
     int numMeshes = meshes->size();
 
-    // compute the total number of verticies and faces
+    int h = color->size().height;
+    int w = color->size().width;
+
     int numVerts = 0;
     int numFaces = 0;
-    // also compute the offset applied to the point indexes for each mesh
-    std::vector<int> vertOffsets;
+    
+    // compute the total number of verticies and faces
     for (int i = 0; i < numMeshes; i++) {
-      vertOffsets.push_back(numVerts);
       numVerts += (*meshes)[i].points.size();
       numFaces += (*meshes)[i].faces.size();
     }
-
-    int h = color->size().height;
-    int w = color->size().width;
 
     cv::Mat colors = color->reshape(1, w*h);
 
@@ -58,6 +56,9 @@ namespace meshlabio {
     myfile << "ply\nformat ascii 1.0\nelement vertex " << numVerts << "\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nelement face " << numFaces << "\nproperty list uchar int vertex_index\nend_header" << std::endl;
 
     float projectMat[3];
+    cv::Mat pointIdx = cv::Mat::zeros(color->size(),  CV_32S);
+
+    int pointPos = 0;
 
     for (int r = 0; r < numMeshes; r++) {
 
@@ -69,6 +70,7 @@ namespace meshlabio {
         int x = (*meshes)[r].points[i].x;
         int y = (*meshes)[r].points[i].y;
         int z = (*meshes)[r].points[i].z;
+
         int colIdx = y*w + x;
         reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
 
@@ -82,13 +84,17 @@ namespace meshlabio {
           // mesh color
           myfile << projectMat[0] << " " << projectMat[1] << " " << projectMat[2] << " " << colorr << " " << colorg << " " << colorb << " " << std::endl;
         }
+        // set point idx
+        pointIdx.at<int>(y, x) = pointPos++;
       }
     }
 
     for (int r = 0; r < numMeshes; r++) {
-      int offset = vertOffsets[r];
       for (int i = 0; i < (*meshes)[r].faces.size(); i++) {
-        myfile << "3 " << (*meshes)[r].faces[i].p1 + offset << " " << (*meshes)[r].faces[i].p2 + offset << " " << (*meshes)[r].faces[i].p3 + offset << " " << std::endl;
+        int p1 = pointIdx.at<int>((*meshes)[r].faces[i].p1.r, (*meshes)[r].faces[i].p1.c);
+        int p2 = pointIdx.at<int>((*meshes)[r].faces[i].p2.r, (*meshes)[r].faces[i].p2.c);
+        int p3 = pointIdx.at<int>((*meshes)[r].faces[i].p3.r, (*meshes)[r].faces[i].p3.c);
+        myfile << "3 " << p1 << " " << p2 << " " << p3 << " " << std::endl;
       }
     }
 
