@@ -54,6 +54,8 @@ void mouseMove(int x, int y) {
   if (yOrigin >= 0) {
     zAngleDiff = (y-yOrigin);
   }
+  
+  // TODO may not need
   glutPostRedisplay();
 }
 
