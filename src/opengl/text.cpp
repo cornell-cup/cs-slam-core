@@ -4,6 +4,11 @@
 // Include GLFW
 #include <GLFW/glfw3.h>
 
+// include glm
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+using namespace glm;
+
 // Include standard headers
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,10 +27,12 @@ static const GLfloat g_vertex_buffer_data[] = {
 // This will identify our vertex buffer
 GLuint vertexbuffer;
 
-int winWidth = 600;
-int winHeight = 600;
+int winWidth = 1024;
+int winHeight = 768;
 
 GLuint programID;
+GLuint MatrixID;
+glm::mat4 mvp;
 
 GLFWwindow* window;
 
@@ -143,6 +150,10 @@ void drawTriangle() {
 void display(void) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glUseProgram(programID);
+
+  // Send our transformation to the currently bound shader, in the "MVP" uniform
+  // This is done in the main loop since each model will have a different MVP matrix (At least for the M part)
+  glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &mvp[0][0]);
   
   drawTriangle();
 
@@ -165,9 +176,34 @@ void initBuffers() {
   glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertex_buffer_data), g_vertex_buffer_data, GL_STATIC_DRAW);
 }
 
+void initMatricies() {
+  // Projection matrix : 45° Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
+  glm::mat4 Projection = glm::perspective(glm::radians(45.0f), (float) winWidth / (float)winHeight, 0.1f, 100.0f);
+
+  // Or, for an ortho camera :
+  //glm::mat4 Projection = glm::ortho(-10.0f,10.0f,-10.0f,10.0f,0.0f,100.0f); // In world coordinates
+
+  // Camera matrix
+  glm::mat4 View = glm::lookAt(
+    glm::vec3(0,0,5), // Camera is at (4,3,3), in World Space
+    glm::vec3(0,0,0), // and looks at the origin
+    glm::vec3(0,1,0)  // Head is up (set to 0,-1,0 to look upside-down)
+  );
+
+  // Model matrix : an identity matrix (model will be at the origin)
+  glm::mat4 Model = glm::mat4(1.0f);
+  // Our ModelViewProjection : multiplication of our 3 matrices
+  mvp = Projection * View * Model; // Remember, matrix multiplication is the other way around
+
+  // Get a handle for our "MVP" uniform
+  // Only during the initialisation
+  MatrixID = glGetUniformLocation(programID, "MVP");
+}
+
 void init() {
   initBuffers();
   initShaders();
+  initMatricies();
 }
 
 int main(int argc, char **argv) {
@@ -185,7 +221,7 @@ int main(int argc, char **argv) {
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // We don't want the old OpenGL 
   
   // Open a window and create its OpenGL context
-  window = glfwCreateWindow( 1024, 768, "Tutorial 01", NULL, NULL);
+  window = glfwCreateWindow( winWidth, winHeight, "Tutorial", NULL, NULL);
   if( window == NULL ){
       fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
       glfwTerminate();
