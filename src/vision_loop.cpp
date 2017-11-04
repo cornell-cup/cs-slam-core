@@ -6,7 +6,7 @@ VisionLoop::~VisionLoop() {}
 
 #define _USE_FILES
 #define INIT_NUDGE -2
-#define VERBOSE
+// #define VERBOSE
 
 // get the current time
 int VisionLoop::_getCurentTime() {
@@ -59,7 +59,7 @@ void VisionLoop::vision_loop () {
 	// DisparityNamedWindows::initialize(&camera);
 
 	// initialize the mesh generator object
-	MeshGenerator meshGenerator = MeshGenerator();
+	meshGenerator = MeshGenerator();
 
 	// initialize the feature tracker
 	FeatureTracker featureTracker;
@@ -86,16 +86,16 @@ void VisionLoop::vision_loop () {
 		#endif
 		prevTime = curTime;
 
-		_disp_mat_lock.lock();
-
 		// process the next frame from the camera in the disparity pipeline
 		camera.nextFrame();
-
-		// release the lock
-		_disp_mat_lock.unlock();
+		
+		mesh_lock.lock();
 		
 		// generate meshes from the disparity map
 		meshGenerator.generateMesh(camera.getDisparity());
+
+		// release the lock
+		mesh_lock.unlock();
 		
 		// update the overhead map and display the map
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
@@ -103,7 +103,7 @@ void VisionLoop::vision_loop () {
 		featureTracker.trackFeatures(*(camera.getLeftCamera()->getFrame()));
 
 		std::string ty =  type2str( camera.getLeftCamera()->getFrame()->type() );
-		printf("Matrix: %s\n", ty.c_str());
+		// printf("Matrix: %s\n", ty.c_str());
 
 		// transform.computeTransform(camera, meshGenerator, featureTracker);
 

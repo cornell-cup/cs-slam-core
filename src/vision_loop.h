@@ -23,10 +23,12 @@ class VisionLoop {
 
     void vision_loop();
 
+    MeshGenerator meshGenerator;
+    // mutex for the meshes
+    std::mutex mesh_lock;
+
   private:
     int _getCurentTime();
-    // mutex for the stereo matrix
-    std::mutex _disp_mat_lock;
 };
 
 #endif
