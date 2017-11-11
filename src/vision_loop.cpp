@@ -1,6 +1,8 @@
 #include "vision_loop.h"
 
-VisionLoop::VisionLoop() {}
+VisionLoop::VisionLoop() {
+	cameraPtr = NULL;
+}
 
 VisionLoop::~VisionLoop() {}
 
@@ -11,29 +13,6 @@ VisionLoop::~VisionLoop() {}
 // get the current time
 int VisionLoop::_getCurentTime() {
 	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-}
-
-std::string type2str(int type) {
-  std::string r;
-
-  uchar depth = type & CV_MAT_DEPTH_MASK;
-  uchar chans = 1 + (type >> CV_CN_SHIFT);
-
-  switch ( depth ) {
-    case CV_8U:  r = "8U"; break;
-    case CV_8S:  r = "8S"; break;
-    case CV_16U: r = "16U"; break;
-    case CV_16S: r = "16S"; break;
-    case CV_32S: r = "32S"; break;
-    case CV_32F: r = "32F"; break;
-    case CV_64F: r = "64F"; break;
-    default:     r = "User"; break;
-  }
-
-  r += "C";
-  r += (chans+'0');
-
-  return r;
 }
 
 void VisionLoop::vision_loop () {
@@ -56,6 +35,7 @@ void VisionLoop::vision_loop () {
 	// rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
 
 	StereoCamera camera = StereoCamera(leftCamera, rightCamera);
+	cameraPtr = &camera;
 	// DisparityNamedWindows::initialize(&camera);
 
 	// initialize the mesh generator object
@@ -86,10 +66,9 @@ void VisionLoop::vision_loop () {
 		#endif
 		prevTime = curTime;
 
+		mesh_lock.lock();
 		// process the next frame from the camera in the disparity pipeline
 		camera.nextFrame();
-		
-		mesh_lock.lock();
 		
 		// generate meshes from the disparity map
 		meshGenerator.generateMesh(camera.getDisparity());
@@ -101,9 +80,6 @@ void VisionLoop::vision_loop () {
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
 
 		featureTracker.trackFeatures(*(camera.getLeftCamera()->getFrame()));
-
-		std::string ty =  type2str( camera.getLeftCamera()->getFrame()->type() );
-		// printf("Matrix: %s\n", ty.c_str());
 
 		// transform.computeTransform(camera, meshGenerator, featureTracker);
 

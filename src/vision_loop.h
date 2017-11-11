@@ -26,6 +26,7 @@ class VisionLoop {
     MeshGenerator meshGenerator;
     // mutex for the meshes
     std::mutex mesh_lock;
+    StereoCamera *cameraPtr;
 
   private:
     int _getCurentTime();

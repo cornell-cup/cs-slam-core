@@ -31,6 +31,29 @@ int windowHeight = 720;
 
 VisionLoop visionLoop;
 
+std::string type2str(int type) {
+  std::string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
+
 void mouseButton(int button, int state, int x, int y) {
   // only start motion if the left button is pressed
   if (button == GLUT_LEFT_BUTTON) {
@@ -70,19 +93,35 @@ void mouseMove(int x, int y) {
 void draw_mesh(void) {
   int i;
 
+  // glColor3f(1.f, 0.f, 0.f);
+  glBegin(GL_QUADS);
+  float widthdisp = 2.f/640;
+  float heightdisp = 1.5f/480;
+  float minwidth = widthdisp*4;
+  float minheight = heightdisp*4;
+  float dispXStart = -3.3f;
+  float dispYStart = 2.f;
+  if (visionLoop.cameraPtr != NULL && visionLoop.cameraPtr->getDisparityNorm()->empty() == 0) {
+    for(int r = 0; r < 480; r+=4) {
+      for(int c = 0; c < 640; c+=4) {
+        float grayscale = visionLoop.cameraPtr->getDispAtNorm(r,c)/255.0;
+        glColor3f(grayscale, grayscale, grayscale);
+        float addx = widthdisp*c;
+        float addy = heightdisp*r;
+        glVertex3f(dispXStart+addx, dispYStart-addy, 0.f);
+        glVertex3f(dispXStart+addx, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy, 0.f);
+      }
+    }
+  }
+
+  glEnd();
+
   glPushMatrix();
-  /* Adjust cube position to be asthetic angle. */
   glTranslatef(0.0, 0.0, -3.0);
   glRotatef(zAngle+zAngleDiff, 1.0, 0.0, 0.0);
   glRotatef(yAngle+yAngleDiff, 0.0, 1.0, 0.0);
-
-  // glColor3f(1.f, 0.f, 0.f);
-  // glBegin(GL_QUADS);
-  // glVertex3f(1.f, 1.f, 0.f);
-  // glVertex3f(1.f, -1.f, 0.f);
-  // glVertex3f(-1.f, -1.f, 0.f);
-  // glVertex3f(-1.f, 1.f, 0.f);
-  // glEnd();
 
   visionLoop.mesh_lock.lock();
   // printf("%lu\n", visionLoop.meshGenerator.getMeshes()->size());
@@ -112,11 +151,11 @@ void draw_mesh(void) {
     colorg = std::max(colorg, (colorg+brighten)%255);
     colorg = std::max(colorb, (colorb+brighten)%255);
 
-    glColor3f(colorr/255.0, colorg/255.0, colorb/255.0);
-
     // point cloud
     if (point_cloud) {
       for (int i = 0; i < (*(visionLoop.meshGenerator.getMeshes()))[r].points.size(); i++) {
+        glColor3f(colorr/255.0, colorg/255.0, colorb/255.0);
+
         int x = (*(visionLoop.meshGenerator.getMeshes()))[r].points[i].x;
         int y = (*(visionLoop.meshGenerator.getMeshes()))[r].points[i].y;
         int z = (*(visionLoop.meshGenerator.getMeshes()))[r].points[i].z;
@@ -125,19 +164,17 @@ void draw_mesh(void) {
         glVertex3f(projectMat[0]*scale, projectMat[1]*scale, projectMat[2]*scale+z_trans);
       }
     } else {
-      glColor3f(colorr/255.0, colorg/255.0, colorb/255.0);
-
       for (int i = 0; i < (*(visionLoop.meshGenerator.getMeshes()))[r].faces.size(); i++) {
         int p1 = (*(visionLoop.meshGenerator.getMeshes()))[r].faces[i].p1; 
         int p2 = (*(visionLoop.meshGenerator.getMeshes()))[r].faces[i].p2; 
         int p3 = (*(visionLoop.meshGenerator.getMeshes()))[r].faces[i].p3; 
 
-        glBegin(GL_TRIANGLES);
-
         int x = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p1].x;
         int y = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p1].y;
         int z = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p1].z;
         reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
+
+        glBegin(GL_TRIANGLES);
   
         glVertex3f(projectMat[0]*scale, projectMat[1]*scale, projectMat[2]*scale+z_trans);
 
@@ -152,6 +189,19 @@ void draw_mesh(void) {
         y = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p3].y;
         z = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p3].z;
         reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
+
+        if (visionLoop.cameraPtr != NULL && visionLoop.cameraPtr->getLeftCamera()->getFrame()->empty() == 0) {
+          cv::Vec3b colors = visionLoop.cameraPtr->getLeftCamera()->getFrame()->at<cv::Vec3b>(y, x);
+
+          if ((projectMat[2] < -0.87 || projectMat[1] > 0.2) && false) {
+            float grayscale = (((int)colors[0]) + colors[1] + colors[2])/(7*255.0);
+            glColor3f(grayscale, grayscale, grayscale);
+          } else {
+            glColor3f(colors[0]/255.0, colors[1]/255.0, colors[2]/255.0);
+          }
+        } else {
+          glColor3f(colorr/255.0, colorg/255.0, colorb/255.0); 
+        }
   
         glVertex3f(projectMat[0]*scale, projectMat[1]*scale, projectMat[2]*scale+z_trans);
 
