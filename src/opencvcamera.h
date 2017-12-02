@@ -11,38 +11,58 @@
 class OpenCVCamera
 {
 public:
-	OpenCVCamera(unsigned int id);
-	OpenCVCamera(std::string filename);
+	// constructor from live camera
+	OpenCVCamera(unsigned int id, unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate);
+	// constructor from file
+	OpenCVCamera(std::string filename, unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate);
 
 	// destructor
 	virtual ~OpenCVCamera();
 
-	void capture(cv::Mat& dest);
+	// get the next frame
+	void nextFrame();
 
-	void configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate);
+	cv::Mat* getFrame();
 
+	// translate the frame vertically by the given amount
+	void nudge(int amount);
+
+	// load the calibraton matricies and initialize the calibration
 	void loadCalibration(std::string cam_mat, std::string dist_mat);
 
+	// read camera constants
 	unsigned int getHeight() const;
 	unsigned int getWidth() const;
 	unsigned int getFrameRate() const;
 	unsigned int getAttribute(unsigned int id) const;
-	
-protected:
-	int _id;
-
 
 private:
+	// the CV video capture object
 	cv::VideoCapture _capture;
 
+	// the most recent frame captured by this camera
+	cv::Mat _frame;
+
+	// the current translation value
+	int _nudgeAmount;
+	// translate an the input image
+	cv::Mat _translateImg(cv::Mat &img, int offsetx, int offsety);
+
+	// set the necessary parameters for the capture object
+	void _configure(unsigned int frame_width, unsigned int frame_height, unsigned int frame_rate);
+
+	// calibraton matricies
 	cv::Mat _cameraMatrix;
 	cv::Mat _distanceCoeff;
 
+	// read a matrix from a text file
 	cv::Mat _readMatFromTxt(std::string filename, int rows, int cols);
 
+	// calibration matrix vectors
 	std::vector<cv::Mat> _map1;
 	std::vector<cv::Mat> _map2;
 
+	// set the calibration maps
 	void _setMaps(cv::Mat& _src);
 };
 
