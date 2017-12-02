@@ -1,232 +1,373 @@
-#include <string>
-
-#include "stereocamera.h"
-#include "meshgenerator.h"
-#include "map2d.h"
-#include "meshlabio.h"
-#include "disparitynamedwindows.h"
-#include "featuretracker.h"
-#include "transformation.h"
-
-#include "server/server.h"
-
-#include <mutex>
-#include <chrono>
-#include <vector>
-
-#ifdef SLAM_PRODUCTION
-#include "pipes/NamedPipeServer.h"
-#include "r2/R2Protocol.hpp"
+#ifdef __APPLE__
+#include <OpenGL/gl.h>
+#else
+#include <GL/gl.h>
 #endif
 
-#define _USE_FILES
-#define INIT_NUDGE -40
-//#define VERBOSE
-
-// mutex for the stereo matrix
-std::mutex disp_mat_lock;
-
-Server* transformServer;
-
-#ifdef SLAM_PRODUCTION
-// named pipe server
-NamedPipeServer* server;
-
-// compress mat to bytestream
-void compressImgMatrix(cv::Mat& img, vector<uchar>& buffer) {
-	vector<int> compression_params;
-	compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-	compression_params.push_back(9);
-
-	cv::imencode("png", img, buffer, compression_params);
-}
-
-void getResponsePacket(std::string request_id, R2Protocol::Packet& response_packet, std::string destination)
-{
-	response_packet.destination = destination;
-	response_packet.source = "VISION";
-	response_packet.id = "disparity_map";
-
-	if (request_id.compare("disparity_map") == 0)
-	{
-		// mutex for disp map
-		disp_mat_lock.lock();
-
-		uchar* disparity_data = disp_ptr->data;
-		size_t disparty_size = disp_ptr->step[0] * disp_ptr->rows;
-
-		response_packet.data.insert(response_packet.data.begin(), disparity_data, disparity_data + disparty_size);
-		disp_mat_lock.lock();
-	}
-	else if (request_id.compare("features") == 0)
-	{
-		//return features
-	}
-	else if (request_id.compare("overhead") == 0)
-	{
-		//return overhead
-	}
-	else if (packet_id.compare("image") == 0)
-	{
-		//return left image
-		server->send();
-	}
-}
-
-unsigned char* onClientPipeRequest(unsigned char * request, unsigned int* reply_size, size_t request_size)
-{
-	R2Protocol::Packet request_packet = {};
-	std::vector<unsigned char> request_vector;
-	request_vector.insert(request_vector.end(), request, request + request_size);
-	R2Protocol::decode(request_vector, request_packet);
-
-	std::string packet_id = std::string(request_packet.id);
-	R2Protocol::Packet response_packet;
-	getResponsePacket(packet_id, response_packet, request_packet.source);
-
-	std::vector<uint8_t> response_bytes_vector;
-	R2Protocol::encode(response_packet, response_bytes_vector);
-
-	uint8_t* response_bytes = new uint8_t[response_bytes_vector.size()];
-
-
-	*reply_size = response_bytes_vector.size();
-
-	for (int i = 0; i < *reply_size; i++)
-	{
-		response_bytes[i] = response_bytes_vector.at(i);
-	}
-
-	return response_bytes;
-}
-
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
 #endif
 
-// get the current time
-int getCurentTime() {
-	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+#include <cmath>
+#include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
+
+#include "vision_loop.h"
+
+float yAngle = 0.f;
+float yAngleDiff = 0.0f;
+int xOrigin = -1;
+
+float zAngle = 0.f;
+float zAngleDiff = 0.0f;
+int yOrigin = -1;
+
+int windowWidth = 1080;
+int windowHeight = 720;
+
+VisionLoop visionLoop;
+
+std::string type2str(int type) {
+  std::string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
 }
 
-void vision_loop() {
-	// initialize the cameras to be used (either from files or physical cameras)
-	#ifdef _USE_FILES
-	OpenCVCamera leftCamera = OpenCVCamera("resources/right_trans.mp4", 640, 480, 30);
-	#else
-	OpenCVCamera leftCamera = OpenCVCamera(1, 640, 480, 30);
-	#endif
+void mouseButton(int button, int state, int x, int y) {
+  // only start motion if the left button is pressed
+  if (button == GLUT_LEFT_BUTTON) {
 
-	// leftCamera.loadCalibration("calibration_mats/cam_mats_left", "calibration_mats/dist_coefs_left");
-	leftCamera.nudge(INIT_NUDGE);
+    // when the button is released
+    if (state == GLUT_UP) {
+      yAngle += yAngleDiff;
+      yAngleDiff = 0;
+      xOrigin = -1;
 
-	#ifdef _USE_FILES
-	OpenCVCamera rightCamera = OpenCVCamera("resources/left_trans.mp4", 640, 480, 30);
-	#else
-	OpenCVCamera rightCamera = OpenCVCamera(0, 640, 480, 30);
-	#endif
+      zAngle += zAngleDiff;
+      zAngleDiff = 0;
+      yOrigin = -1;
+    }
+    else  {
+      xOrigin = x;
+      yOrigin = y;
+    }
+  }
+}
 
-	// rightCamera.loadCalibration("calibration_mats/cam_mats_right", "calibration_mats/dist_coefs_right");
+void mouseMove(int x, int y) {
+  // this will only be true when the left button is down
+  if (xOrigin >= 0) {
 
-	StereoCamera camera = StereoCamera(leftCamera, rightCamera);
-	DisparityNamedWindows::initialize(&camera);
+    // update camera's direction
+    yAngleDiff = (x-xOrigin);
+  }
+  if (yOrigin >= 0) {
+    zAngleDiff = (y-yOrigin);
+  }
+  
+  // TODO may not need
+  // glutPostRedisplay();
+}
 
-	#ifdef SLAM_PRODUCTION
-	server->start();
-	#endif
+void draw_disp_map() {
+  // glColor3f(1.f, 0.f, 0.f);
+  glBegin(GL_QUADS);
+  float widthdisp = 2.f/640;
+  float heightdisp = 1.5f/480;
+  float minwidth = widthdisp*4;
+  float minheight = heightdisp*4;
+  float dispXStart = -3.3f;
+  float dispYStart = 2.f;
+  if (visionLoop.cameraPtr != NULL && visionLoop.cameraPtr->getDisparityNorm()->empty() == 0) {
+    for(int r = 0; r < 480; r+=4) {
+      for(int c = 0; c < 640; c+=4) {
+        float grayscale = visionLoop.cameraPtr->getDispAtNorm(r,c)/255.0;
+        glColor3f(grayscale, grayscale, grayscale);
+        float addx = widthdisp*c;
+        float addy = heightdisp*r;
+        glVertex3f(dispXStart+addx, dispYStart-addy, 0.f);
+        glVertex3f(dispXStart+addx, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy, 0.f);
+      }
+    }
+  }
 
-	// initialize the mesh generator object
-	MeshGenerator meshGenerator = MeshGenerator();
+  glEnd();
+}
 
-	// initialize the feature tracker
-	FeatureTracker featureTracker;
+void draw_overhead() {
+  cv::Mat *map = visionLoop.map2d.getVisual();
+  int rows = map->rows;
+  int cols = map->cols;
+  float widthdisp = 2.f/cols;
+  float heightdisp = 2.f/rows;
+  float minwidth = widthdisp*4;
+  float minheight = heightdisp*4;
+  float dispXStart = -3.3f;
+  float dispYStart = 0.5f;
 
-	// initialize the transformation calculator
-	Transformation transform;
+  glBegin(GL_QUADS);
 
-	transformServer = new Server(&transform);
-	transformServer->runServerThread();
+  if (map->empty() == 0) {
+    for(int r = 0; r < rows/2+16; r+=4) {
+      for(int c = 0; c < cols; c+=4) {
+        float grayscale = map->at<float>(r,c);
+        glColor3f(grayscale, grayscale, grayscale);
+        float addx = widthdisp*c;
+        float addy = heightdisp*r;
+        glVertex3f(dispXStart+addx, dispYStart-addy, 0.f);
+        glVertex3f(dispXStart+addx, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy, 0.f);
+      }
+    }
+  }
 
-	// set to true to quit the loop
-	int quit = 0;
+  glEnd();
+}
 
-	// set to 1 to save a mesh once
-	int savedMesh = 0;
+void draw_optical_flow() {
+  if (visionLoop.cameraPtr != NULL && visionLoop.cameraPtr->getLeftCamera()->getFrame()->empty() == 0) {
+    cv::Mat vis_large = visionLoop.cameraPtr->getLeftCamera()->getFrame()->clone();
+    cv::Mat vis;
 
-	// initialize the overhead map object
-	Map2D map2d;
+    int rows_large = vis_large.rows;
+    int cols_large = vis_large.cols;
 
-	int curTime = getCurentTime();
-	int prevTime = curTime;
+    // the inverse scalar for the output image
+    int scalar = 4;
 
-	while (!quit){
-		curTime = getCurentTime();
-		#ifdef VERBOSE
-			std::cout << ((curTime - prevTime) / 1000000.f) << std::endl;
-		#endif
-		prevTime = curTime;
+    cv::resize(vis_large, vis, cv::Size(rows_large / scalar, cols_large / scalar));
+    std::vector<cv::Point2f>* initFeatures = visionLoop.featureTracker.getInitFeatures();
+    std::vector<cv::Point2f>* curFeatures = visionLoop.featureTracker.getCurFeatures();
 
-		disp_mat_lock.lock();
+    // draw tracking points on the left camera image
+    for(int i = 0; i < initFeatures->size(); i++) {
+      cv::Point2f curPoint = curFeatures->at(i);
+      curPoint.x = curPoint.x / scalar; 
+      curPoint.y = curPoint.y / scalar; 
 
-		// process the next frame from the camera in the disparity pipeline
-		camera.nextFrame();
+      cv::Point2f startPoint = initFeatures->at(i);
+      startPoint.x = startPoint.x / scalar; 
+      startPoint.y = startPoint.y / scalar; 
 
-		// release the lock
-		disp_mat_lock.unlock();
+      cv::line(vis, startPoint, curPoint, cv::Scalar(0, 128, 0));
+      // cv::line(visDisp, startPoint, curPoint, cv::Scalar(0, 128, 0));
+      cv::circle(vis, curPoint, 1, cv::Scalar(0,255,0), -1);
+      // cv::circle(visDisp, curPoint, 2, cv::Scalar(0,255,0), -1);
+    }
+
+    int rows = vis.rows;
+    int cols = vis.cols;
+
+    float widthdisp = 2.f/cols;
+    float heightdisp = 1.5f/rows;
+    float minwidth = widthdisp;
+    float minheight = heightdisp;
+    float dispXStart = -3.3f;
+    float dispYStart = -0.5f;
+
+    glBegin(GL_QUADS);
+    
+    for(int r = 0; r < rows; r++) {
+      for(int c = 0; c < cols; c++) {
+        cv::Vec3b colors = vis.at<cv::Vec3b>(r, c);
+        glColor3f(colors[0]/255.0, colors[1]/255.0, colors[2]/255.0);
+        float addx = widthdisp*c;
+        float addy = heightdisp*r;
+        glVertex3f(dispXStart+addx, dispYStart-addy, 0.f);
+        glVertex3f(dispXStart+addx, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy, 0.f);
+      }
+    }
+
+    glEnd();
+  }
+}
+
+void draw_mesh(void) {
+  int i;
+
+  draw_disp_map();
+
+  draw_overhead();
+
+  draw_optical_flow();
+
+  glPushMatrix();
+  glTranslatef(1.0, 0.0, -3.0);
+  glRotatef(zAngle+zAngleDiff, 1.0, 0.0, 0.0);
+  glRotatef(yAngle+yAngleDiff, 0.0, 1.0, 0.0);
+
+  visionLoop.mesh_lock.lock();
+  // printf("%lu\n", visionLoop.meshGenerator.getMeshes()->size());
+
+  int h = 480;
+  int w = 640;
+
+  float scale = 5.0;
+  int brighten = 50;
+  float z_trans = 3.0;
+
+  bool point_cloud = false;
+
+  float projectMat[3];
+
+  if (point_cloud){
+    glPointSize(4);
+    glBegin(GL_POINTS);
+  }
+
+  for (int r = 0; r < visionLoop.meshGenerator.getMeshes()->size(); r++) {
+    
+    int colorr = (char) (r*333);
+    int colorg = (char) (r*651);
+    int colorb = (char) (r*17);
+    colorr = std::max(colorr, (colorr+brighten)%255);
+    colorg = std::max(colorg, (colorg+brighten)%255);
+    colorg = std::max(colorb, (colorb+brighten)%255);
+
+    // point cloud
+    if (point_cloud) {
+      for (int i = 0; i < (*(visionLoop.meshGenerator.getMeshes()))[r].points.size(); i++) {
+        glColor3f(colorr/255.0, colorg/255.0, colorb/255.0);
+
+        int x = (*(visionLoop.meshGenerator.getMeshes()))[r].points[i].x;
+        int y = (*(visionLoop.meshGenerator.getMeshes()))[r].points[i].y;
+        int z = (*(visionLoop.meshGenerator.getMeshes()))[r].points[i].z;
+        reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
+  
+        glVertex3f(projectMat[0]*scale, projectMat[1]*scale, projectMat[2]*scale+z_trans);
+      }
+    } else {
+      for (int i = 0; i < (*(visionLoop.meshGenerator.getMeshes()))[r].faces.size(); i++) {
+        int p1 = (*(visionLoop.meshGenerator.getMeshes()))[r].faces[i].p1; 
+        int p2 = (*(visionLoop.meshGenerator.getMeshes()))[r].faces[i].p2; 
+        int p3 = (*(visionLoop.meshGenerator.getMeshes()))[r].faces[i].p3; 
+
+        int x = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p1].x;
+        int y = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p1].y;
+        int z = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p1].z;
+        reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
+
+        glBegin(GL_TRIANGLES);
+  
+        glVertex3f(projectMat[0]*scale, projectMat[1]*scale, projectMat[2]*scale+z_trans);
+
+        x = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p2].x;
+        y = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p2].y;
+        z = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p2].z;
+        reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
+  
+        glVertex3f(projectMat[0]*scale, projectMat[1]*scale, projectMat[2]*scale+z_trans);
+
+        x = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p3].x;
+        y = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p3].y;
+        z = (*(visionLoop.meshGenerator.getMeshes()))[r].points[p3].z;
+        reproject_utils::reprojectArr(x, y, z, h, w, projectMat);
+
+        if (visionLoop.cameraPtr != NULL && visionLoop.cameraPtr->getLeftCamera()->getFrame()->empty() == 0) {
+          cv::Vec3b colors = visionLoop.cameraPtr->getLeftCamera()->getFrame()->at<cv::Vec3b>(y, x);
+
+          if ((projectMat[2] < -0.87 || projectMat[1] > 0.2) && false) {
+            float grayscale = (((int)colors[0]) + colors[1] + colors[2])/(7*255.0);
+            glColor3f(grayscale, grayscale, grayscale);
+          } else {
+            glColor3f(colors[0]/255.0, colors[1]/255.0, colors[2]/255.0);
+          }
+        } else {
+          glColor3f(colorr/255.0, colorg/255.0, colorb/255.0); 
+        }
+  
+        glVertex3f(projectMat[0]*scale, projectMat[1]*scale, projectMat[2]*scale+z_trans);
+
+        glEnd();
+      }  
+    }
+  }
+  if (point_cloud){
+    glEnd();
+  }
+
+  visionLoop.mesh_lock.unlock();
+
+  glPopMatrix();
+}
+
+void display(void) {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  draw_mesh();
+  glutSwapBuffers();
+}
+
+void idle(){
+  // printf("idleing\n");
+  glutPostRedisplay();
+  usleep(50*1000);
+}
+
+void init(void) {
+  /* Use depth buffering for hidden surface elimination. */
+  glEnable(GL_DEPTH_TEST);
+
+  /* Setup the view of the cube. */
+  glMatrixMode(GL_PROJECTION);
+  gluPerspective( /* field of view in degree */ 40.0,
+    /* aspect ratio */ 1.0,
+		/* Z near */ 1.0, /* Z far */ 10.0);
+	glLoadIdentity();
+	glViewport(0, 0, windowWidth, windowHeight);
+	gluPerspective(45,(1.0*windowWidth)/windowHeight,1,20.0);
+  glMatrixMode(GL_MODELVIEW);
+  gluLookAt(0.0, 0.0, 5.0,  /* eye is at (0,0,5) */
+    0.0, 0.0, 0.0,      /* center is at (0,0,0) */
+    0.0, 1.0, 0.);      /* up is in positive Y direction */
+}
+
+void *vision_loop(void *arg) {
+	visionLoop.vision_loop();
+}
  
-		#ifdef SLAM_PRODUCTION
-		// display the camera frames and the normalized disparity map
-		pipeline.updateDisplay();
-		#endif
-		
-		// generate meshes from the disparity map
-		meshGenerator.generateMesh(camera.getDisparity());
-		
-		// update the overhead map and display the map
-		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
+// TODO test resize of camera feed, stereo mapping, and point projection
+int main(int argc, char **argv) {
+  pthread_t tid;
+  pthread_create(&tid, NULL, vision_loop, NULL);
 
-		featureTracker.trackFeatures(*(camera.getLeftCamera()->getFrame()));
-
-		transform.computeTransform(camera, meshGenerator, featureTracker);
-
-		featureTracker.tick();
-
-		// display the camera frames and the normalized disparity map
-		DisparityNamedWindows::updateDisplay(featureTracker, map2d);
-
-		// check if the esc key has been pressed to exit the loop
-		int key = cv::waitKey(1);
-		if (key == 27) // esc
-			quit = 1;
-		else if (key == 112) {	// p
-			meshlabio::writeMeshes("mesh.ply", leftCamera.getFrame(), meshGenerator.getMeshes(), 0);
-			//pipeline.writePointCloud("points.ply");
-			savedMesh = 1;
-		}
-		else if (key == 115) {	// s
-			leftCamera.nudge(1);
-		}
-		else if (key == 119) {	// w
-			leftCamera.nudge(-1);
-		}
-		else if (savedMesh == 1) {
-			meshlabio::writeMeshes("mesh2.ply", leftCamera.getFrame(), meshGenerator.getMeshes(), 1);
-			savedMesh = 0;
-		}
-	}
-}
-
-int main() {
-
-	#ifdef SLAM_PRODUCTION
-	server = NamedPipeServer::create("\\\\.\\pipe\\slam");
-	server->setOnRequestCallback(onClientPipeRequest);
-	#endif
-
-	vision_loop();
-
-	#ifdef SLAM_PRODUCTION
-	delete server;
-	#endif
-
-
-	return 0;
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitWindowSize(windowWidth, windowHeight);
+  glutCreateWindow("red 3D lighted cube");
+	glutDisplayFunc(display);
+	// reenable later
+  glutIdleFunc(idle);
+  glutMouseFunc(mouseButton);
+	glutMotionFunc(mouseMove);
+  init();
+  glutMainLoop();
+  pthread_join(tid, NULL);
+  
+  return 0;
 }
