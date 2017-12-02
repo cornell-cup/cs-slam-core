@@ -44,6 +44,9 @@ void VisionLoop::vision_loop () {
 	// initialize the transformation calculator
 	Transformation transform;
 
+	// initialize the simple transformation calculator
+	SimpleTransform simple_transform;
+
 	// set to true to quit the loop
 	int quit = 0;
 
@@ -71,6 +74,8 @@ void VisionLoop::vision_loop () {
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
 
 		featureTracker.trackFeatures(*(camera.getLeftCamera()->getFrame()));
+
+		simple_transform.computeTransform(leftCamera.getWidth(), rightCamera.getHeight(), featureTracker);
 
 		// transform.computeTransform(camera, meshGenerator, featureTracker);
 

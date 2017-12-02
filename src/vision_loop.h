@@ -10,6 +10,7 @@
 #include "disparitynamedwindows.h"
 #include "featuretracker.h"
 #include "transformation.h"
+#include "simple_transform.h"
 
 #include <mutex>
 #include <chrono>
