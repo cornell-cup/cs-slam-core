@@ -90,9 +90,7 @@ void mouseMove(int x, int y) {
   // glutPostRedisplay();
 }
 
-void draw_mesh(void) {
-  int i;
-
+void draw_disp_map() {
   // glColor3f(1.f, 0.f, 0.f);
   glBegin(GL_QUADS);
   float widthdisp = 2.f/640;
@@ -117,9 +115,110 @@ void draw_mesh(void) {
   }
 
   glEnd();
+}
+
+void draw_overhead() {
+  cv::Mat *map = visionLoop.map2d.getVisual();
+  int rows = map->rows;
+  int cols = map->cols;
+  float widthdisp = 2.f/cols;
+  float heightdisp = 2.f/rows;
+  float minwidth = widthdisp*4;
+  float minheight = heightdisp*4;
+  float dispXStart = -3.3f;
+  float dispYStart = 0.5f;
+
+  glBegin(GL_QUADS);
+
+  if (map->empty() == 0) {
+    for(int r = 0; r < rows/2+16; r+=4) {
+      for(int c = 0; c < cols; c+=4) {
+        float grayscale = map->at<float>(r,c);
+        glColor3f(grayscale, grayscale, grayscale);
+        float addx = widthdisp*c;
+        float addy = heightdisp*r;
+        glVertex3f(dispXStart+addx, dispYStart-addy, 0.f);
+        glVertex3f(dispXStart+addx, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy, 0.f);
+      }
+    }
+  }
+
+  glEnd();
+}
+
+void draw_optical_flow() {
+  if (visionLoop.cameraPtr != NULL && visionLoop.cameraPtr->getLeftCamera()->getFrame()->empty() == 0) {
+    cv::Mat vis_large = visionLoop.cameraPtr->getLeftCamera()->getFrame()->clone();
+    cv::Mat vis;
+
+    int rows_large = vis_large.rows;
+    int cols_large = vis_large.cols;
+
+    // the inverse scalar for the output image
+    int scalar = 4;
+
+    cv::resize(vis_large, vis, cv::Size(rows_large / scalar, cols_large / scalar));
+    std::vector<cv::Point2f>* initFeatures = visionLoop.featureTracker.getInitFeatures();
+    std::vector<cv::Point2f>* curFeatures = visionLoop.featureTracker.getCurFeatures();
+
+    // draw tracking points on the left camera image
+    for(int i = 0; i < initFeatures->size(); i++) {
+      cv::Point2f curPoint = curFeatures->at(i);
+      curPoint.x = curPoint.x / scalar; 
+      curPoint.y = curPoint.y / scalar; 
+
+      cv::Point2f startPoint = initFeatures->at(i);
+      startPoint.x = startPoint.x / scalar; 
+      startPoint.y = startPoint.y / scalar; 
+
+      cv::line(vis, startPoint, curPoint, cv::Scalar(0, 128, 0));
+      // cv::line(visDisp, startPoint, curPoint, cv::Scalar(0, 128, 0));
+      cv::circle(vis, curPoint, 1, cv::Scalar(0,255,0), -1);
+      // cv::circle(visDisp, curPoint, 2, cv::Scalar(0,255,0), -1);
+    }
+
+    int rows = vis.rows;
+    int cols = vis.cols;
+
+    float widthdisp = 2.f/cols;
+    float heightdisp = 1.5f/rows;
+    float minwidth = widthdisp;
+    float minheight = heightdisp;
+    float dispXStart = -3.3f;
+    float dispYStart = -0.5f;
+
+    glBegin(GL_QUADS);
+    
+    for(int r = 0; r < rows; r++) {
+      for(int c = 0; c < cols; c++) {
+        cv::Vec3b colors = vis.at<cv::Vec3b>(r, c);
+        glColor3f(colors[0]/255.0, colors[1]/255.0, colors[2]/255.0);
+        float addx = widthdisp*c;
+        float addy = heightdisp*r;
+        glVertex3f(dispXStart+addx, dispYStart-addy, 0.f);
+        glVertex3f(dispXStart+addx, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy-minheight, 0.f);
+        glVertex3f(dispXStart+addx+minwidth, dispYStart-addy, 0.f);
+      }
+    }
+
+    glEnd();
+  }
+}
+
+void draw_mesh(void) {
+  int i;
+
+  draw_disp_map();
+
+  draw_overhead();
+
+  draw_optical_flow();
 
   glPushMatrix();
-  glTranslatef(0.0, 0.0, -3.0);
+  glTranslatef(1.0, 0.0, -3.0);
   glRotatef(zAngle+zAngleDiff, 1.0, 0.0, 0.0);
   glRotatef(yAngle+yAngleDiff, 0.0, 1.0, 0.0);
 

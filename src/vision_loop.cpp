@@ -41,9 +41,6 @@ void VisionLoop::vision_loop () {
 	// initialize the mesh generator object
 	meshGenerator = MeshGenerator();
 
-	// initialize the feature tracker
-	FeatureTracker featureTracker;
-
 	// initialize the transformation calculator
 	Transformation transform;
 
@@ -52,9 +49,6 @@ void VisionLoop::vision_loop () {
 
 	// set to 1 to save a mesh once
 	int savedMesh = 0;
-
-	// initialize the overhead map object
-	Map2D map2d;
 
 	int curTime = _getCurentTime();
 	int prevTime = curTime;
@@ -72,9 +66,6 @@ void VisionLoop::vision_loop () {
 		
 		// generate meshes from the disparity map
 		meshGenerator.generateMesh(camera.getDisparity());
-
-		// release the lock
-		mesh_lock.unlock();
 		
 		// update the overhead map and display the map
 		map2d.updateMap(*meshGenerator.getMeshes(), leftCamera.getWidth(), rightCamera.getHeight());
@@ -84,6 +75,9 @@ void VisionLoop::vision_loop () {
 		// transform.computeTransform(camera, meshGenerator, featureTracker);
 
 		featureTracker.tick();
+
+		// release the lock
+		mesh_lock.unlock();
 
 		// display the camera frames and the normalized disparity map
 		// DisparityNamedWindows::updateDisplay(featureTracker, map2d);

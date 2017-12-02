@@ -28,6 +28,12 @@ class VisionLoop {
     std::mutex mesh_lock;
     StereoCamera *cameraPtr;
 
+    // initialize the overhead map object
+    Map2D map2d;
+
+    // initialize the feature tracker
+    FeatureTracker featureTracker;
+
   private:
     int _getCurentTime();
 };
