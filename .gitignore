@@ -5,7 +5,7 @@ slam.dSYM
 .vscode
 
 # local compile scripts
-compile.sh
+# compile.sh
 compile.bat
 
 # build
